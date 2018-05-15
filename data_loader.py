@@ -23,31 +23,29 @@ def load_data(data_directory, split):
 	y_test = [i[1] for i in test_split]
 	return X_train, y_train, X_val, y_val, X_test, y_test
 
-
 def get_file_list_from_dir(datadir):
 	"""load data from the specified datadir"""
-
-        total_files = []
-        for _,_,files in os.walk(datadir):
-                for file in files:
-                        if 'defaced' in file:
-                                non_defaced = file.replace('_defaced', '') 
-                                defaced = file
-                                total_files.append((datadir + '/' + non_defaced, datadir + '/' + defaced)) 
-        return total_files
+	total_files = []
+	for _,_,files in os.walk(datadir):
+		for file in files:
+			if 'defaced' in file:
+				non_defaced = file.replace('_defaced', '')
+				defaced = file
+				total_files.append((datadir + '/' + non_defaced, datadir + '/' + defaced))
+	return total_files
 
 def data_split(file_list, split):
-        train, val, test = split
-        train_end = train / 100
-        val_end = train_end + (val / 100)
-        test_start = val_end 
-        number_of_files = len(file_list)
+    train, val, test = split
+    train_end = train / 100
+    val_end = train_end + (val / 100)
+    test_start = val_end 
+    number_of_files = len(file_list)
 
-        train_split = file_list[:int(train_end * number_of_files)]
-        val_split = file_list[int(train_end * number_of_files):int(number_of_files*val_end)]
-        test_split = file_list[int(number_of_files*test_start):]
+    train_split = file_list[:int(train_end * number_of_files)]
+    val_split = file_list[int(train_end * number_of_files):int(number_of_files*val_end)]
+    test_split = file_list[int(number_of_files*test_start):]
 
-        return train_split, val_split, test_split
+    return train_split, val_split, test_split
 
 
 
@@ -61,13 +59,13 @@ class Dataset:
 		N, B = len(self.X), self.batch_size
 		idxs = np.arange(N)
 		for i in range(0, N, B):
-                        batch_X = self.X[i:i+B] 
-                        batch_y = self.y[i:i+B] 
-                        batch_X = [nib.load(X_data) for X_data in batch_X] 
-                        batch_y = [nib.load(y_data) for y_data in batch_y] 
-                        batch_X = [img.get_data() for img in batch_X] 
-                        batch_y = [img.get_data() for img in batch_y] 
-                        yield (np.array(batch_X), np.array(batch_y))
+			batch_X = self.X[i:i+B]
+			batch_y = self.y[i:i+B]
+			batch_X = [nib.load(X_data) for X_data in batch_X]
+			batch_y = [nib.load(y_data) for y_data in batch_y]
+			batch_X = [img.get_data() for img in batch_X]
+			batch_y = [img.get_data() for img in batch_y]
+			yield (np.array(batch_X), np.array(batch_y))
 
 
 	def __len__(self):
