@@ -1,4 +1,7 @@
 from __future__ import division
+
+""" Make sure your MRI_Images directory is in the same directory as this file! """
+
 import os
 from random import shuffle
 from math import floor 
@@ -79,6 +82,3 @@ class Dataset:
 #test_dset = Dataset(X_val, y_val, batch_size=1)
 
 
-print(len(train_dset))
-print(len(val_dset))
-print(len(test_dset))
