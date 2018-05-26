@@ -12,8 +12,8 @@ def load_data(data_directory, split):
 	"""Load the data into train, dev, and test set with the specified split. 
 	Split should be a tuple of three percentages (Train%, Dev%, Test%) """ 
 
-	total_files = get_file_list_from_dir(data_directory, y_label='_defaced')
-	#shuffle(total_files) 
+	total_files = get_file_list_from_dir(data_directory, y_label='_mask')
+	shuffle(total_files) 
 	train_split, val_split, test_split = data_split(total_files, split)
 	X_train = [i[0] for i in train_split]
 	y_train = [i[1] for i in train_split]
@@ -64,7 +64,7 @@ class Dataset:
             batch_X = self.X[i:i+B]
             batch_y = self.y[i:i+B]
             # @DEBUG
-            if i == 12:
+            if i == 3:
                 print(batch_y[0])
             batch_X = [nib.load(X_data) for X_data in batch_X]
             #print('Loaded X batch...')

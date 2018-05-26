@@ -7,13 +7,10 @@ import nibabel as nib
 import numpy as np
 
 from data_loader import *
-
 data_dir = './data'
 total_files = get_file_list_from_dir(data_dir)
 i = 0
 for file in total_files:
-    if i == 1:
-        break
     # execute for 1 image (remove if over full data set)
     # Set file names
     normal = file[0]
@@ -33,17 +30,20 @@ for file in total_files:
     # Extract image data
     normal_img = normal_nii.get_data()
     defaced_img = defaced_nii.get_data()
-    # Norm normal data (why?)
+    # Norm normal data
     norm_data2 = (normal_img - np.min(normal_img))/(np.max(normal_img)-np.min(normal_img))
     # defaced - normal - negative values where mask is located
     delta_img = defaced_img - norm_data2
     # Set all other pixels not part of mask to 1
-    delta_img[delta_img > 0] = 1
+    delta_img[delta_img >= 0] = 1
     # Set pixels part of mask to 0
-    delta_img[delta_img <= 0] = 0
+    delta_img[delta_img < 0] = 0
     # Create mask image and save
     mask_fn = normal.replace('.nii','') + '_mask.nii'
     print(mask_fn)
-    mask_img = nib.Nifti1Image(delta_img, normal_nii.affine)
+    delta_img = delta_img.astype(np.int16)
+    mask_img = nib.Nifti1Image(delta_img, np.eye(4))#normal_nii.affine)
+    #@DEBUG 
+    #mask_fn = './hello.nii'
     mask_img.to_filename(mask_fn)
-    i+=1
+    print('saved: ', mask_fn)
