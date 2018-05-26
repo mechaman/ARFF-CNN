@@ -45,12 +45,14 @@ for file in total_files:
     # Extract image data
     normal_img = normal_nii.get_data()
     defaced_img = defaced_nii.get_data()
+    # Norm normal data (why?)
+    norm_data2 = (normal_img - np.min(normal_img))/(np.max(normal_img)-np.min(normal_img))
     # defaced - normal - negative values where mask is located
-    delta_img = defaced_img - normal_img
+    delta_img = defaced_img - norm_data2
     # Set all other pixels not part of mask to 1
-    delta_img[delta_img >= 0] = 0
+    delta_img[delta_img > 0] = 1
     # Set pixels part of mask to 0
-    delta_img[delta_img < 0] = 1
+    delta_img[delta_img <= 0] = 0
     # Create mask image and save
     mask_fn = normal.replace('.nii','') + '_mask.nii'
     print(mask_fn)
