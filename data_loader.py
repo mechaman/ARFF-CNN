@@ -78,7 +78,7 @@ class Dataset:
     def __len__(self):
         return len(self.X) 
 
-'''
+''' 
 #example
 X_train, y_train, X_val, y_val, X_test, y_test  = load_data('data', split=(90,5,5))
 
