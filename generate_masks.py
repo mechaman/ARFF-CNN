@@ -13,7 +13,6 @@ import numpy as np
 from data_loader import *
 
 data_dir = './data'
->>>>>>> 75b85118910a9cf699f6de9e4785f4c2ff7c71ad
 
 i = 0
 for file in total_files:
