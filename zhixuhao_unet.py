@@ -6,7 +6,7 @@ from keras.layers import Input, merge, Conv2D, MaxPooling2D, UpSampling2D, Dropo
 from keras.optimizers import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as keras
-#from data import *
+from data_generation import DataGenerator
 from data_loader import *
 
 class myUnet(object):
@@ -143,7 +143,7 @@ class myUnet(object):
 
         model = Model(input = inputs, output = conv10)
 
-        model.compile(optimizer = Adam(lr = 1e-3), loss = 'binary_crossentropy', metrics = ['accuracy'])
+        model.compile(optimizer = Adam(lr = 1e-2), loss = 'binary_crossentropy', metrics = ['accuracy'])
 
         return model
     
@@ -183,33 +183,78 @@ class myUnet(object):
             y_list.append(y)
             i+=1
         return np.array(x_list),np.array(y_list)
-            
+    
+    def train2(self):
+        from keras import backend as K
+        K.clear_session()
+        print("Loading Data.")
+        # Partition data : x_train, y_train, ... , x_test, y_test
+        partition = {}
+        (partition['x_train'],
+         partition['y_train'],
+         partition['x_val'],
+         partition['y_val'],
+         partition['x_test'],
+         partition['y_test'])  = load_data('data', split=(0.5,0.5,99))
+        
+        print(len(partition['x_train']))
+        print(len(partition['y_train']))
+        # Parameters
+        params = {'dim': (256,256),
+                  'batch_size': 1,
+                  'n_channels': 1,
+                  'shuffle': True}
+
+        # Generators
+        training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
+        
+        validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
+        testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
+        print('Loaded Data')
+        
+        print("Instantiate UNET")
+        model = self.get_unet()
+        model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
+        
+        print('Fitting Model...')
+        model.fit_generator(generator=training_generator,
+                    validation_data=validation_generator,
+                    steps_per_epoch = 1,
+                    validation_steps = 1,
+                    epochs=1,
+                    verbose=0)#,
+                    #callbacks =[model_checkpoint])  
+                    #use_multiprocessing=True,
+                    #workers=6)
+        
+         
     def train(self):
         print("Loading Data.")
         (X_train, y_train, X_val, y_val, X_test, y_test)  = load_data('data', split=(90,5,5))
         train_dset = Dataset(X_train, y_train, batch_size=1)
-        
-        #val_dset = Dataset(X_val, y_val, batch_size=1)
+        val_dset = Dataset(X_val, y_val, batch_size=1)
         #test_dset = Dataset(X_val, y_val, batch_size=1)
         x_train, y_train = self.expandDataSet(train_dset, samples=10)
-        #x_val, y_val = self.expandDataSet(val_dset)
+        x_val, y_val = self.expandDataSet(val_dset)
         #x_test, y_test = self.expandDataSet(test_dset)
         print("Finished Loading Data.")
         
         model = self.get_unet()
         print("Instantiate UNET")
-        '''
+        
         model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
+        '''
         print('Fitting model...')
         
         print('Training Model...')
 
-        model.fit(x_train, y_train, batch_size=1, nb_epoch=10, validation_data= (x_val, y_val), verbose=1, callbacks=[model_checkpoint])
+        model.fit(x_train, y_train, batch_size=1, nb_epoch=15, validation_data= (x_val, y_val), verbose=1, callbacks=[model_checkpoint])
         print('Trained Model')
         '''
         print('Predict Test Data')
-        
-        a_slice = x_train[None, 2, :, :, :]
+        print('xtrain shape', x_train.shape)
+        a_slice = x_train[3, None, :, :]
+        print('shape : ', a_slice.shape)
         import time
         t0 = time.time()
         imgs_mask_test = model.predict(a_slice, batch_size=1, verbose=1)
@@ -229,14 +274,7 @@ class myUnet(object):
 
 if __name__ == '__main__':
     myunet = myUnet()
-    myunet.train()
+    myunet.train2()
     #myunet.save_img()
-
-
-
-
-
-
-
 
 
