@@ -48,12 +48,12 @@ class DataGenerator(keras.utils.Sequence):
         pdb.set_trace()
         print('Generating...')
         # Initialization
-        X = np.empty((150*self.batch_size ,*self.dim, self.n_channels))
-        y = np.empty((150*self.batch_size, *self.dim, self.n_channels))
+        X = np.empty((self.batch_size, self.dim, self.n_channels))
+        y = np.empty((self.batch_size, self.dim, self.n_channels))
         #print('X shape: ', X.shape)
         # Need to split larger image into slices
-        xslice_idx = 0
-        yslice_idx = 0
+        xbatch_idx = 0
+        ybatch_idx = 0
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             # Load scan data for raw scan & mask
@@ -61,16 +61,21 @@ class DataGenerator(keras.utils.Sequence):
             #print(x_data.shape)
             y_data = nib.load(list_ys_temp[i]).get_data().astype(np.float32)
             # Iterate through slices
-            for x_idx in range(x_data.shape[2]):
-                X[xslice_idx,] = x_data[:, :, x_idx, np.newaxis]
-                xslice_idx+=1
+            X[xbatch_idx,] = x_data
+            y[ybatch_idx,] = y_data
+
+            xbatch_idx += 1
+            ybatch_idx += 1
+            # for x_idx in range(x_data.shape[2]):
+            #     X[xslice_idx,] = x_data[:, :, x_idx, np.newaxis]
+            #     xslice_idx+=1
             
-            for y_idx in range(y_data.shape[2]):
-                y[yslice_idx,] = y_data[:, :, y_idx, np.newaxis]
-                yslice_idx+=1
+            # for y_idx in range(y_data.shape[2]):
+            #     y[yslice_idx,] = y_data[:, :, y_idx, np.newaxis]
+            #     yslice_idx+=1
         # Return view of data (slice a larger array than there is info) 
         # bs*150,  256, 256, 1
         x1 = X[:xslice_idx, :, :, :].astype(np.float32)
         y1 = y[:yslice_idx, :, :, :].astype(np.float32)
-        print(x1.dtype)
+        # print(x1.dtype)
         return x1, y1
