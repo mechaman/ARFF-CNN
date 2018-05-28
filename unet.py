@@ -13,7 +13,8 @@ from keras.models import *
 from keras.layers import Input, merge, Conv2D, MaxPooling2D, UpSampling2D, Dropout, Cropping2D
 from keras.optimizers import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
-
+import pdb
+import tensorflow as tf 
 
 class UNet3D(TrainableLayer):
     """
@@ -31,7 +32,7 @@ class UNet3D(TrainableLayer):
                  img_rows=256,
                  img_cols=256,
                  img_depth=150,
-                 acti_func='prelu',
+                 acti_func='relu',
                  name='UNet'):
         super(UNet3D, self).__init__(name=name)
 
@@ -54,7 +55,7 @@ class UNet3D(TrainableLayer):
         # assert layer_util.check_spatial_dims(images, lambda x: x % 8 == 0)
         # assert layer_util.check_spatial_dims(images, lambda x: x >= 89)
     
-        inputs = Input((self.img_rows, self.img_cols, self.image_depth, 1))
+        inputs = Input((self.image_rows, self.image_cols, self.image_depth, 1))
 
 
         block_layer = UNetBlock('DOWNSAMPLE',
@@ -86,6 +87,9 @@ class UNet3D(TrainableLayer):
                                 name='L3')
         pool_3, conv_3 = block_layer(pool_2)
         print(block_layer)
+        print('got here bitchessss')
+
+        pdb.set_trace()
 
         block_layer = UNetBlock('UPSAMPLE',
                                 (self.n_features[3], self.n_features[4]),
@@ -94,7 +98,7 @@ class UNet3D(TrainableLayer):
                                 w_regularizer=self.regularizers['w'],
                                 acti_func=self.acti_func,
                                 name='L4')
-        up_3, _ = block_layer(pool_3)
+        up_3, _ = block_layer(tf.convert_to_tensor(pool_3))
         print(block_layer)
 
         block_layer = UNetBlock('UPSAMPLE',
@@ -127,7 +131,7 @@ class UNet3D(TrainableLayer):
                                 with_downsample_branch=True,
                                 w_initializer=self.initializers['w'],
                                 w_regularizer=self.regularizers['w'],
-                                acti_func=self.acti_func,
+                                acti_func='sigmoid',
                                 name='R1_FC')
         concat_1 = ElementwiseLayer('CONCAT')(conv_1, up_1)
 
@@ -141,6 +145,7 @@ class UNet3D(TrainableLayer):
 
         model.compile(optimizer = Adam(lr = 1e-2), loss = 'binary_crossentropy', metrics = ['accuracy'])
 
+        print('modela', model)
 
         return model
 

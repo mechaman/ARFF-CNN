@@ -17,21 +17,13 @@ def load_data(data_directory, split, DEBUG=False):
     total_files = get_file_list_from_dir(data_directory, y_label='_defaced')
     shuffle(total_files) 
     train_split, val_split, test_split = data_split(total_files, split)
-    if DEBUG:
-        X_train = ['data/IXI180-HH-1605-T1.nii']
-        y_train = ['data/IXI180-HH-1605-T1_defaced.nii']
-        X_val = []
-        y_val = []
-        X_test = []
-        y_test = []
 
-    else:
-        X_train = [i[0] for i in train_split]
-    	y_train = [i[1] for i in train_split]
-    	X_val = [i[0] for i in val_split]
-    	y_val = [i[1] for i in val_split]
-    	X_test = [i[0] for i in test_split]
-    	y_test = [i[1] for i in test_split]
+    X_train = [i[0] for i in train_split]
+    y_train = [i[1] for i in train_split]
+    X_val = [i[0] for i in val_split]
+    y_val = [i[1] for i in val_split]
+    X_test = [i[0] for i in test_split]
+    y_test = [i[1] for i in test_split]
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 def get_file_list_from_dir(datadir, y_label='_defaced'):

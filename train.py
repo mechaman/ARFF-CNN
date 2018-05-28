@@ -1,6 +1,7 @@
 import unet
 from keras import backend as K
 from data_loader import *
+from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from data_generation import DataGenerator
 import pdb 
 
@@ -12,9 +13,14 @@ def train():
     partition['x_val'],
     partition['y_val'],
     partition['x_test'],
-    partition['y_test'])  = load_data('data', split=(90,5,5), DEBUG=True)
+    partition['y_test'])  = load_data('data', split=(40,40,20), DEBUG=True)
 	print(partition['x_train'])
 	print(partition['y_train'])
+	print(partition['x_val'])
+	print(partition['y_val'])
+	print(partition['x_test'])
+	print(partition['y_test'])
+
 
 
 	params = {
@@ -25,10 +31,25 @@ def train():
              }
 
 	training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
-	model = unet.UNet3D() 
- #    validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
- #    testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
+	validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
+	testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
+	print('Loaded Data')
 
+
+	print('Instantiate 3D-Unet') 
+	model = unet.UNet3D(num_classes=2) 
+	model = model.create_model()
+
+	# model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
+
+	# print(model)
+
+	# model.fit_generator(generator=training_generator,
+ #                    validation_data=validation_generator,
+ #                    steps_per_epoch = 1,
+ #                    validation_steps = 1,
+ #                    epochs=1,
+ #                    verbose=0)
 
 
 
