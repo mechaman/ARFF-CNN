@@ -31,7 +31,8 @@ class DataGenerator(keras.utils.Sequence):
 
         # Generate data
         X, y = self.__data_generation(list_IDs_temp, list_ys_temp)
-
+        print('Get Item : ', X.shape)
+        print('Get Item : ', y.shape)
         return X, y
 
     def on_epoch_end(self):
@@ -51,6 +52,8 @@ class DataGenerator(keras.utils.Sequence):
         xslice_idx = 0
         yslice_idx = 0
         # Generate data
+        # Num Slcies
+        num_slices = 60
         for i, ID in enumerate(list_IDs_temp):
             # Load scan data for raw scan & mask
             x_data = nib.load(ID).get_data().astype(np.float32)
@@ -60,13 +63,18 @@ class DataGenerator(keras.utils.Sequence):
             for x_idx in range(x_data.shape[2]):
                 X[xslice_idx,] = x_data[:, :, x_idx, np.newaxis]
                 xslice_idx+=1
+                if xslice_idx == num_slices:
+                    break
             
             for y_idx in range(y_data.shape[2]):
                 y[yslice_idx,] = y_data[:, :, y_idx, np.newaxis]
                 yslice_idx+=1
+                if yslice_idx == num_slices:
+                    break
         # Return view of data (slice a larger array than there is info) 
         # bs*150,  256, 256, 1
         x1 = X[:xslice_idx, :, :, :].astype(np.float32)
         y1 = y[:yslice_idx, :, :, :].astype(np.float32)
-        print(x1.dtype)
-        return x1, y1
+        print('y1 shape : ', y1.shape)
+        print('x1 shape : ', x1.shape)
+        return x1, y1#keras.utils.to_categorical(y1)

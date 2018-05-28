@@ -23,7 +23,7 @@ def load_data(data_directory, split):
 	y_test = [i[1] for i in test_split]
 	return X_train, y_train, X_val, y_val, X_test, y_test
 
-def get_file_list_from_dir(datadir, y_label='_defaced'):
+def get_file_list_from_dir(datadir, y_label='_mask'):
 	"""load data from the specified datadir"""
 	total_files = []
 	for _,_,files in os.walk(datadir):
