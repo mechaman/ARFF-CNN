@@ -37,6 +37,14 @@ class DataGenerator(keras.utils.Sequence):
 
         return X, y
 
+
+    def resize_image(self, image):
+        new_dims = tuple((image.shape[0] + (150 - image.shape[0]), image.shape[1], image.shape[2]))
+        new_image = np.zeros(new_dims)
+        new_image[:image.shape[0], :image.shape[1], :image.shape[2]] = image 
+        return new_image 
+
+
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = np.arange(len(self.list_IDs))
@@ -45,11 +53,11 @@ class DataGenerator(keras.utils.Sequence):
 
     def __data_generation(self, list_IDs_temp, list_ys_temp):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
-        pdb.set_trace()
+        # pdb.set_trace()
         print('Generating...')
         # Initialization
-        X = np.empty((self.batch_size, self.dim, self.n_channels))
-        y = np.empty((self.batch_size, self.dim, self.n_channels))
+        X = np.empty((self.batch_size, self.n_channels, 150, self.dim[1], self.dim[2]))
+        y = np.empty((self.batch_size, self.n_channels, 150, self.dim[1], self.dim[2]))
         #print('X shape: ', X.shape)
         # Need to split larger image into slices
         xbatch_idx = 0
@@ -57,9 +65,17 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             # Load scan data for raw scan & mask
-            x_data = nib.load(ID).get_data().astype(np.float32)
+            x_data = np.swapaxes(nib.load(ID).get_data().astype(np.float32), 0, -1)
+            y_data = np.swapaxes(nib.load(list_ys_temp[i]).get_data().astype(np.float32), 0, -1)
+
+            # if x_data.shape[0] != 150:
+            #     x_data = self.resize_image(x_data) 
+            # if y_data.shape[0] != 150:
+            #     y_data = self.resize_image(y_data) 
+
             #print(x_data.shape)
-            y_data = nib.load(list_ys_temp[i]).get_data().astype(np.float32)
+
+            # x_data = 
             # Iterate through slices
             X[xbatch_idx,] = x_data
             y[ybatch_idx,] = y_data
@@ -75,7 +91,7 @@ class DataGenerator(keras.utils.Sequence):
             #     yslice_idx+=1
         # Return view of data (slice a larger array than there is info) 
         # bs*150,  256, 256, 1
-        x1 = X[:xslice_idx, :, :, :].astype(np.float32)
-        y1 = y[:yslice_idx, :, :, :].astype(np.float32)
+        x1 = X[:xbatch_idx, :, :, :].astype(np.float32)
+        y1 = y[:ybatch_idx, :, :, :].astype(np.float32)
         # print(x1.dtype)
         return x1, y1

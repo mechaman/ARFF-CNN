@@ -24,7 +24,7 @@ def train():
 
 
 	params = {
-				'dim': (256,256,150),
+				'dim': (150,256,256),
 	            'batch_size': 1,
 	            'n_channels': 1,
 	            'shuffle': True
@@ -33,23 +33,23 @@ def train():
 	training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
 	validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
 	testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
+
 	print('Loaded Data')
 
 
 	print('Instantiate 3D-Unet') 
-	model = unet.UNet3D(num_classes=2) 
-	model = model.create_model()
+	model = unet.unet()
+	print(model)
 
-	# model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
+	model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
 
-	# print(model)
 
-	# model.fit_generator(generator=training_generator,
- #                    validation_data=validation_generator,
- #                    steps_per_epoch = 1,
- #                    validation_steps = 1,
- #                    epochs=1,
- #                    verbose=0)
+	model.fit_generator(generator=training_generator,
+                    validation_data=training_generator,
+                    steps_per_epoch = 1,
+                    validation_steps = 1,
+                    epochs=1,
+                    verbose=0)
 
 
 

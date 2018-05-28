@@ -1,209 +1,86 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function
+from functools import partial
 
-from niftynet.layer import layer_util
-from niftynet.layer.base_layer import TrainableLayer
-from niftynet.layer.convolution import ConvolutionalLayer
-from niftynet.layer.deconvolution import DeconvolutionalLayer
-from niftynet.layer.downsample import DownSampleLayer
-from niftynet.layer.elementwise import ElementwiseLayer
-from niftynet.layer.crop import CropLayer
-from niftynet.utilities.util_common import look_up_operations
-from keras.models import *
-from keras.layers import Input, merge, Conv2D, MaxPooling2D, UpSampling2D, Dropout, Cropping2D
-from keras.optimizers import *
-from keras.callbacks import ModelCheckpoint, LearningRateScheduler
-import pdb
+from keras.layers import *
+from keras.engine import Model
+from keras.optimizers import Adam
+from helper import create_convolution_block, concatenate
+from metrics import weighted_dice_coefficient_loss
+import numpy as np
 import tensorflow as tf 
-
-class UNet3D(TrainableLayer):
-    """
-    reimplementation of 3D U-net
-      Çiçek et al., "3D U-Net: Learning dense Volumetric segmentation from
-      sparse annotation", MICCAI '16
-    """
-
-    def __init__(self,
-                 num_classes,
-                 w_initializer=None,
-                 w_regularizer=None,
-                 b_initializer=None,
-                 b_regularizer=None,
-                 img_rows=256,
-                 img_cols=256,
-                 img_depth=150,
-                 acti_func='relu',
-                 name='UNet'):
-        super(UNet3D, self).__init__(name=name)
-
-        self.n_features = [32, 64, 128, 256, 512]
-        self.image_rows = img_rows
-        self.image_cols = img_cols 
-        self.image_depth = img_depth
+import pdb
 
 
-        self.acti_func = acti_func
-        self.num_classes = num_classes
+def unet(inputShape=(1,150,256,256)):
+       
+    # paddedShape = (data_ch.shape[1]+2, data_ch.shape[2]+2, data_ch.shape[3]+2, data_ch.shape[4])
 
-        self.initializers = {'w': w_initializer, 'b': b_initializer}
-        self.regularizers = {'w': w_regularizer, 'b': b_regularizer}
+    #initial padding
+    input_img = Input(shape=inputShape)
+    print(input_img)
+    # x = Lambda(lambda x: K.spatial_3d_padding(x, padding=((1, 1), (1, 1), (1, 1))),
+    #     output_shape=paddedShape)(input_img) #Lambda layers require output_shape
 
-        print('using {}'.format(name))
+    #your original code without padding for MaxPooling layers (replace input_img with x)
+    pdb.set_trace()
+    # downsampling phase
+    # pdb.set_trace()
+    conv1 = Conv3D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(input_img)
+    #print "conv1 shape:",conv1.shape
+    conv1 = Conv3D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv1)
+    #print "conv1 shape:",conv1.shape
+    pool1 = MaxPooling3D(pool_size=2, data_format='channels_first')(conv1)
+    #print "pool1 shape:",pool1.shape
 
-    def create_model(self):
-        # image_size  should be divisible by 8
-        # assert layer_util.check_spatial_dims(images, lambda x: x % 8 == 0)
-        # assert layer_util.check_spatial_dims(images, lambda x: x >= 89)
-    
-        inputs = Input((self.image_rows, self.image_cols, self.image_depth, 1))
+    conv2 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(pool1)
+    #print "conv2 shape:",conv2.shape
+    conv2 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv2)
+    #print "conv2 shape:",conv2.shape
+    pool2 = MaxPooling3D(pool_size=2, data_format='channels_first')(conv2)
+    #print "pool2 shape:",pool2.shape
 
+    conv3 = Conv3D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(pool2)
+    #print "conv3 shape:",conv3.shape
+    conv3 = Conv3D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv3)
+    #print "conv3 shape:",conv3.shape
+    pool3 = MaxPooling3D(pool_size=2, data_format='channels_first')(conv3)
+    #print "pool3 shape:",pool3.shape
 
-        block_layer = UNetBlock('DOWNSAMPLE',
-                                (self.n_features[0], self.n_features[1]),
-                                (3, 3), with_downsample_branch=True,
-                                w_initializer=self.initializers['w'],
-                                w_regularizer=self.regularizers['w'],
-                                acti_func=self.acti_func,
-                                name='L1')
-        pool_1, conv_1 = block_layer(inputs)
-        print(block_layer)
+    conv4 = Conv3D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(pool3)
+    conv4 = Conv3D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv4)
+    drop4 = Dropout(0.5)(conv4)
+    pool4 = MaxPooling3D(pool_size=2, data_format='channels_first')(drop4)
 
-        block_layer = UNetBlock('DOWNSAMPLE',
-                                (self.n_features[1], self.n_features[2]),
-                                (3, 3), with_downsample_branch=True,
-                                w_initializer=self.initializers['w'],
-                                w_regularizer=self.regularizers['w'],
-                                acti_func=self.acti_func,
-                                name='L2')
-        pool_2, conv_2 = block_layer(pool_1)
-        print(block_layer)
+    conv5 = Conv3D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(pool4)
+    conv5 = Conv3D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv5)
+    drop5 = Dropout(0.5)(conv5)
 
-        block_layer = UNetBlock('DOWNSAMPLE',
-                                (self.n_features[2], self.n_features[3]),
-                                (3, 3), with_downsample_branch=True,
-                                w_initializer=self.initializers['w'],
-                                w_regularizer=self.regularizers['w'],
-                                acti_func=self.acti_func,
-                                name='L3')
-        pool_3, conv_3 = block_layer(pool_2)
-        print(block_layer)
-        print('got here bitchessss')
+#upsampling portion of unet
+    up6 = Conv3D(512, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size = 2, data_format='channels_first')(drop5))
+    merge6 = merge([drop4,up6], mode = 'concat', concat_axis = 1)
+    conv6 = Conv3D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge6)
+    conv6 = Conv3D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv6)
 
-        pdb.set_trace()
+    up7 = Conv3D(256, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size = 2, data_format='channels_first')(conv6))
+    merge7 = merge([conv3,up7], mode = 'concat', concat_axis = 1)
+    conv7 = Conv3D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge7)
+    conv7 = Conv3D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv7)
 
-        block_layer = UNetBlock('UPSAMPLE',
-                                (self.n_features[3], self.n_features[4]),
-                                (3, 3), with_downsample_branch=False,
-                                w_initializer=self.initializers['w'],
-                                w_regularizer=self.regularizers['w'],
-                                acti_func=self.acti_func,
-                                name='L4')
-        up_3, _ = block_layer(tf.convert_to_tensor(pool_3))
-        print(block_layer)
+    up8 = Conv3D(128, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size = 2, data_format='channels_first')(conv7))
+    merge8 = merge([conv2,up8], mode = 'concat', concat_axis = 1)
+    conv8 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge8)
+    conv8 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv8)
 
-        block_layer = UNetBlock('UPSAMPLE',
-                                (self.n_features[3], self.n_features[3]),
-                                (3, 3), with_downsample_branch=False,
-                                w_initializer=self.initializers['w'],
-                                w_regularizer=self.regularizers['w'],
-                                acti_func=self.acti_func,
-                                name='R3')
-        concat_3 = ElementwiseLayer('CONCAT')(conv_3, up_3)
-        up_2, _ = block_layer(concat_3)
-        print(block_layer)
+    up9 = Conv3D(64, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size = 2, data_format='channels_first')(conv8))
+    merge9 = merge([conv1,up9], mode = 'concat', concat_axis = 1)
+    conv9 = Conv3D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge9)
+    conv9 = Conv3D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv9)
+    conv9 = Conv3D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv9)
+#binary sigmoid output for masking.
+    conv10 = Conv3D(1, 1, activation = 'sigmoid')(conv9)
 
-        block_layer = UNetBlock('UPSAMPLE',
-                                (self.n_features[2], self.n_features[2]),
-                                (3, 3), with_downsample_branch=False,
-                                w_initializer=self.initializers['w'],
-                                w_regularizer=self.regularizers['w'],
-                                acti_func=self.acti_func,
-                                name='R2')
-        concat_2 = ElementwiseLayer('CONCAT')(conv_2, up_2)
-        up_1, _ = block_layer(concat_2)
-        print(block_layer)
+    model= Model(input_img, conv10)
+    model.compile(optimizer='Adam', loss='binary_crossentropy')
 
-        block_layer = UNetBlock('NONE',
-                                (self.n_features[1],
-                                 self.n_features[1],
-                                 self.num_classes),
-                                (3, 3, 1),
-                                with_downsample_branch=True,
-                                w_initializer=self.initializers['w'],
-                                w_regularizer=self.regularizers['w'],
-                                acti_func='sigmoid',
-                                name='R1_FC')
-        concat_1 = ElementwiseLayer('CONCAT')(conv_1, up_1)
-
-        # for the last layer, upsampling path is not used
-        _, output_tensor = block_layer(concat_1)
-
-        crop_layer = CropLayer(border=44, name='crop-88')
-        output_tensor = crop_layer(output_tensor)
-
-        model = Model(inputs=inputs, outputs=output_tensor)
-
-        model.compile(optimizer = Adam(lr = 1e-2), loss = 'binary_crossentropy', metrics = ['accuracy'])
-
-        print('modela', model)
-
-        return model
+    return model
 
 
-SUPPORTED_OP = set(['DOWNSAMPLE', 'UPSAMPLE', 'NONE'])
-
-
-class UNetBlock(TrainableLayer):
-    def __init__(self,
-                 func,
-                 n_chns,
-                 kernels,
-                 w_initializer=None,
-                 w_regularizer=None,
-                 with_downsample_branch=False,
-                 acti_func='relu',
-                 name='UNet_block'):
-
-        super(UNetBlock, self).__init__(name=name)
-
-        self.func = look_up_operations(func.upper(), SUPPORTED_OP)
-
-        self.kernels = kernels
-        self.n_chns = n_chns
-        self.with_downsample_branch = with_downsample_branch
-        self.acti_func = acti_func
-
-        self.initializers = {'w': w_initializer}
-        self.regularizers = {'w': w_regularizer}
-
-    def layer_op(self, input_tensor, is_training=True):
-        output_tensor = input_tensor
-        for (kernel_size, n_features) in zip(self.kernels, self.n_chns):
-            conv_op = ConvolutionalLayer(n_output_chns=n_features,
-                                         kernel_size=kernel_size,
-                                         w_initializer=self.initializers['w'],
-                                         w_regularizer=self.regularizers['w'],
-                                         acti_func=self.acti_func,
-                                         name='{}'.format(n_features))
-            output_tensor = conv_op(output_tensor, is_training)
-
-        if self.with_downsample_branch:
-            branch_output = output_tensor
-        else:
-            branch_output = None
-
-        if self.func == 'DOWNSAMPLE':
-            downsample_op = DownSampleLayer('MAX',
-                                            kernel_size=2,
-                                            stride=2,
-                                            name='down_2x2')
-            output_tensor = downsample_op(output_tensor)
-        elif self.func == 'UPSAMPLE':
-            upsample_op = DeconvolutionalLayer(n_output_chns=self.n_chns[-1],
-                                               kernel_size=2,
-                                               stride=2,
-                                               name='up_2x2')
-            output_tensor = upsample_op(output_tensor, is_training)
-        elif self.func == 'NONE':
-            pass  # do nothing
-        return output_tensor, branch_output
