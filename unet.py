@@ -24,61 +24,19 @@ def unet(inputShape=(1,150,256,256)):
     pdb.set_trace()
     # downsampling phase
     # pdb.set_trace()
-    conv1 = Conv3D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(input_img)
-    #print "conv1 shape:",conv1.shape
-    conv1 = Conv3D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv1)
-    #print "conv1 shape:",conv1.shape
-    pool1 = MaxPooling3D(pool_size=2, data_format='channels_first')(conv1)
-    #print "pool1 shape:",pool1.shape
+    x= Conv3D(filters=8, kernel_size=3, activation='relu', padding='same', data_format='channels_first')(input_img)
+    x= MaxPooling3D(pool_size=2, data_format='channels_first')(x)
+    x= Conv3D(filters=8, kernel_size=3, activation='relu', padding='same', data_format='channels_first')(x)
+    x= MaxPooling3D(pool_size=2, data_format='channels_first')(x)
 
-    conv2 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(pool1)
-    #print "conv2 shape:",conv2.shape
-    conv2 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv2)
-    #print "conv2 shape:",conv2.shape
-    pool2 = MaxPooling3D(pool_size=2, data_format='channels_first')(conv2)
-    #print "pool2 shape:",pool2.shape
 
-    conv3 = Conv3D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(pool2)
-    #print "conv3 shape:",conv3.shape
-    conv3 = Conv3D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv3)
-    #print "conv3 shape:",conv3.shape
-    pool3 = MaxPooling3D(pool_size=2, data_format='channels_first')(conv3)
-    #print "pool3 shape:",pool3.shape
+    #upsampling phase
+    x= UpSampling3D(size=2, data_format='channels_first')(x)
+    x= Conv3D(filters=8, kernel_size=3, activation='relu', padding='same', data_format='channels_first')(x) # PADDING IS NOT THE SAME!!!!!
+    x= UpSampling3D(size=2, data_format='channels_first')(x)
+    x= Conv3D(filters=1, kernel_size=1, activation='sigmoid', padding='same', data_format='channels_first')(x)
 
-    conv4 = Conv3D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(pool3)
-    conv4 = Conv3D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv4)
-    drop4 = Dropout(0.5)(conv4)
-    pool4 = MaxPooling3D(pool_size=2, data_format='channels_first')(drop4)
-
-    conv5 = Conv3D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(pool4)
-    conv5 = Conv3D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv5)
-    drop5 = Dropout(0.5)(conv5)
-
-#upsampling portion of unet
-    up6 = Conv3D(512, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size = 2, data_format='channels_first')(drop5))
-    merge6 = merge([drop4,up6], mode = 'concat', concat_axis = 1)
-    conv6 = Conv3D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge6)
-    conv6 = Conv3D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv6)
-
-    up7 = Conv3D(256, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size = 2, data_format='channels_first')(conv6))
-    merge7 = merge([conv3,up7], mode = 'concat', concat_axis = 1)
-    conv7 = Conv3D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge7)
-    conv7 = Conv3D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv7)
-
-    up8 = Conv3D(128, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size = 2, data_format='channels_first')(conv7))
-    merge8 = merge([conv2,up8], mode = 'concat', concat_axis = 1)
-    conv8 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge8)
-    conv8 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv8)
-
-    up9 = Conv3D(64, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size = 2, data_format='channels_first')(conv8))
-    merge9 = merge([conv1,up9], mode = 'concat', concat_axis = 1)
-    conv9 = Conv3D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge9)
-    conv9 = Conv3D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv9)
-    conv9 = Conv3D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv9)
-#binary sigmoid output for masking.
-    conv10 = Conv3D(1, 1, activation = 'sigmoid')(conv9)
-
-    model= Model(input_img, conv10)
+    model= Model(input_img, x)
     model.compile(optimizer='Adam', loss='binary_crossentropy')
 
     return model
