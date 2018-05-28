@@ -194,7 +194,7 @@ class myUnet(object):
         K.clear_session()
         print("Loading Data.")
         # Partition data : x_train, y_train, ... , x_test, y_test
-        #pdb.set_trace()
+        pdb.set_trace()
         partition = {}
         (partition['x_train'],
          partition['y_train'],
@@ -203,6 +203,7 @@ class myUnet(object):
          partition['x_test'],
          partition['y_test'])  = load_data('data', split=(90,5,5))
         
+
         print(len(partition['x_train']))
         print(len(partition['y_train']))
         # Parameters
