@@ -10,6 +10,8 @@ from keras import backend as keras
 from data_loader import *
 from data_generator import DataGenerator 
 
+
+
 class myUnet(object):
 
     def __init__(self, img_rows = 256, img_cols = 256):
