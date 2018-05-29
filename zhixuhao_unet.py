@@ -1,15 +1,34 @@
-import os 
-#os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# Force Keras to use CPU
+import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import numpy as np
 from keras.models import *
 from keras.layers import Input, merge, Conv2D, MaxPooling2D, UpSampling2D, Dropout, Cropping2D
 from keras.optimizers import *
-from keras.callbacks import ModelCheckpoint, LearningRateScheduler
+from keras.callbacks import ModelCheckpoint, LearningRateScheduler, Callback, CSVLogger
 from keras import backend as keras
-#from data_generation import DataGenerator
-from data_loader import *
-from data_generator import DataGenerator 
 
+from data_loader import *
+from data_generator import DataGenerator
+from metrics import dice_coef
+from losses import dice_coef_loss
+
+class LossHistory(Callback):
+    def on_train_begin(self, logs={}):
+        self.losses = []
+        self.val_losses = []
+        self.mse = []
+        self.val_mse = []
+
+    def on_batch_end(self, batch, logs={}):
+        # Loss
+        self.losses.append(logs.get('loss'))
+        self.val_losses.append(logs.get('val_loss'))
+        # MSE
+        self.mse.append(logs.get('mean_squared_error'))
+        self.val_mse.append(logs.get('val_mean_squared_error'))
+        
 class myUnet(object):
 
     def __init__(self, img_rows = 256, img_cols = 256):
@@ -144,9 +163,11 @@ class myUnet(object):
 
         model = Model(input = inputs, output = conv10)
 
-        model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy'])
-
+        #model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
+        model.compile(optimizer = Adam(lr = 1e-4), loss = dice_coef_loss, metrics = ['accuracy', dice_coef])
+        
         return model
+    
     
     
     def expandDataSet(self, data, samples=1):
@@ -184,11 +205,10 @@ class myUnet(object):
          partition['x_val'],
          partition['y_val'],
          partition['x_test'],
-         partition['y_test'])  = load_data('slice_data_side', split=(90,5,5))
+         partition['y_test'])  = load_data('slice_data_side', split=(0.005,0.005,99.99))
         print('shape of training x :' , len(partition['x_train']))
         
         
-
         # Parameters
         params = {'dim': (256,256),
                   'batch_size': 1,
@@ -204,31 +224,43 @@ class myUnet(object):
         
         print("Instantiate UNET")
         # Check if checkpoint exists
-        model = load_model('unet.hdf5') 
+        #model = load_model('unet.hdf5') 
+        #model = model.load_weights('unet_weights.hdf5')
         #else:
-        #model = self.get_unet()
-        model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1,
+        model = self.get_unet()
+        model_checkpoint = ModelCheckpoint('unet_dice.hdf5', monitor='dice_coef_loss',verbose=1,
                                            save_best_only=True)
         
         print('Fitting Model...')
+        csv_logger = CSVLogger('log_dice.csv', append=True, separator=';')
         model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
                     #steps_per_epoch = 1,
                     validation_steps = 1,
-                    epochs=1,
+                    epochs=3,
                     verbose=1,
-                    callbacks =[model_checkpoint],
+                    callbacks =[model_checkpoint, csv_logger],
                     use_multiprocessing=True,
                     workers=6)
         # Save weights
-        #model.save_weights('unet_weights.hdf5')
+        model.save_weights('unet_dice_weights.hdf5')
+        
+        # Save losses & accuracies 
+        #print(history.val_losses)
+        #print(history.losses)
+        #print(type(history.losses))
+        #np.savetxt('val_losses.txt', np.array(history.val_losses), delimiter=",")
+        #np.savetxt('losses.txt', np.array(history.losses), delimiter=",")
+
+        
         
         print('Predicting w. Model...')
         predict = model.predict_generator(generator=training_generator)
-        print(np.min(predict[1]), np.max(predict[1]))
-        self.save_img(predict[1])
+        self.save_img(predict[2], fn='d_mask2.nii')
+        self.save_img(predict[1], fn='d_mask1.nii')
+        self.save_img(predict[0], fn='d_mask0.nii')
         #@DEBUG 
-        for img_name in partition['x_train']:
+        for img_name in (partition['x_train'])[0:5]:
             print(img_name)
         
     def train2(self):
