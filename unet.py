@@ -25,17 +25,25 @@ def unet(inputShape=(1,150,256,256)):
     # downsampling phase
     # pdb.set_trace()
     x= Conv3D(filters=8, kernel_size=3, activation='relu', padding='same', data_format='channels_first')(input_img)
+    print(x) 
     x= MaxPooling3D(pool_size=2, data_format='channels_first')(x)
+    print(x) 
     x= Conv3D(filters=8, kernel_size=3, activation='relu', padding='same', data_format='channels_first')(x)
+    print(x) 
     x= MaxPooling3D(pool_size=2, data_format='channels_first')(x)
-
+    print(x) 
 
     #upsampling phase
     x= UpSampling3D(size=2, data_format='channels_first')(x)
+    print(x)
     x= Conv3D(filters=8, kernel_size=3, activation='relu', padding='same', data_format='channels_first')(x) # PADDING IS NOT THE SAME!!!!!
+    print(x) 
     x= UpSampling3D(size=2, data_format='channels_first')(x)
+    print(x) 
     x= Conv3D(filters=1, kernel_size=1, activation='sigmoid', padding='same', data_format='channels_first')(x)
+    print(x)
 
+    
     model= Model(input_img, x)
     model.compile(optimizer='Adam', loss='binary_crossentropy')
 
