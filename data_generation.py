@@ -70,8 +70,14 @@ class DataGenerator(keras.utils.Sequence):
             # Load scan data for raw scan & mask
             if third_dimension:
                 # set channels as first dimension for 3D Unet.
+              
                 x_data = np.swapaxes(nib.load(ID).get_data().astype(np.float32), 0, -1)
                 y_data = np.swapaxes(nib.load(list_ys_temp[i]).get_data().astype(np.float32), 0, -1)
+                if x_data[0] < 150:
+                    x_data = self.resize_image(x_data) 
+                    y_data = self.resize_image(y_data)
+
+                    
                 X[x_slice_idx,] = x_data
                 y[y_slice_ix,] = y_data
 
