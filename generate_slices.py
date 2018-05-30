@@ -31,8 +31,8 @@ def writeSlices(img_data,
         img_data = img_data.astype(np.int32)
     # Output slices for side
     if view[0]:
-        suffix = '_side_mask_' if mask else '_side_' 
-        for s_idx in range(s_dim):
+       suffix = '_side_mask_' if mask else '_side_' 
+       for s_idx in range(s_dim):
             side_slice = img_data[:, :, s_idx]
             # Construct final output path
             side_output_fp = (output_fp.replace('.nii', '') + 
@@ -42,28 +42,28 @@ def writeSlices(img_data,
              to_filename(side_output_fp))
         
     # Output slices for back
-    if view[1]:
-        suffix = '_back_mask_' if mask else '_back_' 
-        for b_idx in range(b_dim):
-            back_slice = img_data[:, b_idx, :]
-            # Construct final output path
-            back_output_fp = (output_fp.replace('.nii', '') + 
-                              suffix + str(b_idx) + '.nii')
+#    if view[1]:
+#        suffix = '_back_mask_' if mask else '_back_' 
+#        for b_idx in range(b_dim):
+#            back_slice = img_data[:, b_idx, :]
+#            # Construct final output path
+#            back_output_fp = (output_fp.replace('.nii', '') + 
+#                              suffix + str(b_idx) + '.nii')
             # Write slice
-            (nib.Nifti1Image(back_slice, np.eye(4)).
-             to_filename(back_output_fp))
+#            (nib.Nifti1Image(back_slice, np.eye(4)).
+#            to_filename(back_output_fp))
         
     # Output slices for top
-    if view[2]:
-        suffix = '_top_mask_' if mask else '_top_' 
-        for t_idx in range(t_dim):
-            top_slice = img_data[t_idx, :, :]
-            # Construct final output path
-            top_output_fp = (output_fp.replace('.nii', '') + 
-                              suffix + str(t_idx) + '.nii')
-            # Write slice
-            (nib.Nifti1Image(top_slice, np.eye(4)).
-             to_filename(top_output_fp))
+#    if view[2]:
+#        suffix = '_top_mask_' if mask else '_top_' 
+#        for t_idx in range(t_dim):
+#            top_slice = img_data[t_idx, :, :]
+#            # Construct final output path
+#            top_output_fp = (output_fp.replace('.nii', '') + 
+#                              suffix + str(t_idx) + '.nii')
+#            # Write slice
+#            (nib.Nifti1Image(top_slice, np.eye(4)).
+#             to_filename(top_output_fp))
         
     return True
         
