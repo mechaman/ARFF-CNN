@@ -46,13 +46,19 @@ def train():
 
 	model.fit_generator(generator=training_generator,
                     validation_data=training_generator,
-                    steps_per_epoch = 1,
+                    #steps_per_epoch = 1,
                     validation_steps = 1,
-                    epochs=1,
+                    epochs=70, 
                     verbose=0)
 
-
-
+	print('Predicting ...')
+	predict = model.predict_generator(generator=training_generator)
+        self.save_img(predict[2], fn='d_mask2.nii')
+        self.save_img(predict[1], fn='d_mask1.nii')
+        self.save_img(predict[0], fn='d_mask0.nii')
+        for img_name in (partition['x_train'])[0:5]:
+        	print(img_name)
+        
 
 
 
