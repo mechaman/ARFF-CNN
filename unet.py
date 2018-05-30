@@ -3,8 +3,8 @@ from functools import partial
 from keras.layers import *
 from keras.engine import Model
 from keras.optimizers import Adam
-from helper import create_convolution_block, concatenate
-from metrics import weighted_dice_coefficient_loss
+#from helper import create_convolution_block, concatenate
+#from metrics import weighted_dice_coefficient_loss
 import numpy as np
 import tensorflow as tf 
 import pdb
@@ -21,7 +21,7 @@ def unet(inputShape=(1,150,256,256)):
     #     output_shape=paddedShape)(input_img) #Lambda layers require output_shape
 
     #your original code without padding for MaxPooling layers (replace input_img with x)
-    pdb.set_trace()
+#    pdb.set_trace()
     # downsampling phase
     # pdb.set_trace()
     x= Conv3D(filters=8, kernel_size=3, activation='relu', padding='same', data_format='channels_first')(input_img)
@@ -34,7 +34,8 @@ def unet(inputShape=(1,150,256,256)):
     x= UpSampling3D(size=2, data_format='channels_first')(x)
     x= Conv3D(filters=8, kernel_size=3, activation='relu', padding='same', data_format='channels_first')(x) # PADDING IS NOT THE SAME!!!!!
     x= UpSampling3D(size=2, data_format='channels_first')(x)
-    x= Conv3D(filters=1, kernel_size=1, activation='sigmoid', padding='same', data_format='channels_first')(x)
+    x = ZeroPadding3D(padding=(1,0,0), data_format='channels_first')(x) 
+    x= Conv3D(filters=1, kernel_size=1, activation='sigmoid', data_format='channels_first')(x)
 
     model= Model(input_img, x)
     model.compile(optimizer='Adam', loss='binary_crossentropy')

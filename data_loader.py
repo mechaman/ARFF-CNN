@@ -7,6 +7,7 @@ from random import shuffle
 from math import floor 
 import nibabel as nib
 import numpy as np
+import pdb 
 
 def load_data(data_directory, split, DEBUG=False):
     """Load the data into train, dev, and test set with the specified split.
@@ -14,7 +15,7 @@ def load_data(data_directory, split, DEBUG=False):
 
     if not os.path.isdir(data_directory):
         raise Exception('Data directory not found.')
-    total_files = get_file_list_from_dir(data_directory, y_label='_defaced')
+    total_files = get_file_list_from_dir(data_directory, y_label='_mask')
     shuffle(total_files) 
     train_split, val_split, test_split = data_split(total_files, split)
 
