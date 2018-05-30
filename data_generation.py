@@ -35,8 +35,6 @@ class DataGenerator(keras.utils.Sequence):
 
         # Generate data
         X, y = self.__data_generation(list_IDs_temp, list_ys_temp, self.third_dimension)
-        print('Get Item : ', X.shape)
-        print('Get Item : ', y.shape)
         return X, y
 
 
@@ -62,7 +60,6 @@ class DataGenerator(keras.utils.Sequence):
 
     def __data_generation(self, list_IDs_temp, list_ys_temp, third_dimension=False):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
-        print('Generating...')
         # Initialization
         X = np.empty((self.batch_size, self.n_channels, self.dim[0], self.dim[1], self.dim[2]))
         y = np.empty((self.batch_size, self.n_channels, self.dim[0], self.dim[1], self.dim[2]))

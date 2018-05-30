@@ -7,7 +7,7 @@ import nibabel as nib
 import pdb 
 
 
-def save_img(self, img, fn = 'd_mask.nii'):
+def save_img(img, fn = 'd_mask.nii'):
 	img_nii = nib.Nifti1Image(img, np.eye(4))
 	img_nii.to_filename(os.path.join('.', fn))
 	return True
@@ -31,6 +31,7 @@ def train():
                     'third_dimension': True
              }
 
+	print('Loading data...')
 	training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
 	validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
 	testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
