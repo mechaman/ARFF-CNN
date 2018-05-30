@@ -42,7 +42,11 @@ def train():
                     validation_data=training_generator,
                     #steps_per_epoch = 1,
                     validation_steps = 1,
-                    verbose=0)
+                    verbose=1,
+                    epochs=70,
+                    callbacks=[model_checkpoint],
+                    use_multiprocessing=True, 
+                    workers=6)
 	model.save_weights('unet_3d_binary_cross_entropy.hdfs')
 
 	print('Predicting ...')
@@ -52,8 +56,6 @@ def train():
         self.save_img(predict[0], fn='d_mask0.nii')
         for img_name in (partition['x_train'])[0:5]:
         	print(img_name)
-        
-
 
 
 
