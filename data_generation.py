@@ -57,8 +57,8 @@ class DataGenerator(keras.utils.Sequence):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
         print('Generating...')
         # Initialization
-        X = np.empty((self.batch_size, self.n_channels, 150, self.dim[1], self.dim[2]))
-        y = np.empty((self.batch_size, self.n_channels, 150, self.dim[1], self.dim[2]))
+        X = np.empty((self.batch_size, self.n_channels, self.dim[0], self.dim[1], self.dim[2]))
+        y = np.empty((self.batch_size, self.n_channels, self.dim[0], self.dim[1], self.dim[2]))
         # Need to split larger image into slices
        
         x_slice_idx = 0
