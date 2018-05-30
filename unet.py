@@ -7,6 +7,7 @@ from keras.optimizers import Adam
 #from metrics import weighted_dice_coefficient_loss
 import numpy as np
 import tensorflow as tf 
+import nibabel as nib
 import pdb
 
 

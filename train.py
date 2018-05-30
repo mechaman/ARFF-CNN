@@ -3,7 +3,14 @@ from keras import backend as K
 from data_loader import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from data_generation import DataGenerator
+import nibabel as nib
 import pdb 
+
+
+def save_img(self, img, fn = 'd_mask.nii'):
+	img_nii = nib.Nifti1Image(img, np.eye(4))
+	img_nii.to_filename(os.path.join('.', fn))
+	return True
 
 def train():
 	K.clear_session()
@@ -51,11 +58,11 @@ def train():
 
 	print('Predicting ...')
 	predict = model.predict_generator(generator=training_generator)
-        self.save_img(predict[2], fn='d_mask2.nii')
-        self.save_img(predict[1], fn='d_mask1.nii')
-        self.save_img(predict[0], fn='d_mask0.nii')
-        for img_name in (partition['x_train'])[0:5]:
-        	print(img_name)
+	save_img(predict[2], fn='pred_image0.nii')
+	save_img(predict[1], fn='pred_image1.nii')
+	save_img(predict[0], fn='pred_image2.nii')
+	for img_name in (partition['x_train'])[0:5]:
+		print(img_name)
 
 
 
