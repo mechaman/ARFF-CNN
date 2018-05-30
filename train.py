@@ -43,7 +43,7 @@ def train():
                     #steps_per_epoch = 1,
                     validation_steps = 1,
                     verbose=1,
-                    epochs=70,
+                    epochs=1,
                     callbacks=[model_checkpoint],
                     use_multiprocessing=True, 
                     workers=6)

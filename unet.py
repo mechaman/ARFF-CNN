@@ -36,11 +36,11 @@ def unet(inputShape=(1,None,256,256)):
     x= Conv3D(filters=8, kernel_size=3, activation='relu', padding='same', data_format='channels_first')(x) # PADDING IS NOT THE SAME!!!!!
     x= UpSampling3D(size=2, data_format='channels_first')(x)
     x = ZeroPadding3D(padding=(1,0,0), data_format='channels_first')(x) 
-    x= Conv3D(filters=1, kernel_size=1, activation='sigmoid',  data_format='channels_first')(x)
+    x= Conv3D(filters=1, kernel_size=1, activation='sigmoid', data_format='channels_first')(x)
 
     
     model= Model(input_img, x)
-    model.compile(optimizer='Adam', loss='binary_crossentropy')
+    model.compile(optimizer=Adam(lr=0.01), loss='binary_crossentropy', metrics=['mse'])
 
     return model
 
