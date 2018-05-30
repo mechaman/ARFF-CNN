@@ -9,13 +9,14 @@ import pdb
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, examples, labels, batch_size=32, dim=(256,256), n_channels=1
-                 , shuffle=True):
+                 , shuffle=True, third_dimension=False):
         'Initialization'
         self.dim = dim
         self.batch_size = batch_size
         self.labels = labels
         self.list_IDs = examples
         self.n_channels = n_channels
+        self.third_dimension = third_dimension
         self.shuffle = shuffle
         self.on_epoch_end()
 
@@ -33,7 +34,7 @@ class DataGenerator(keras.utils.Sequence):
         list_ys_temp = [self.labels[k] for k in indexes]
 
         # Generate data
-        X, y = self.__data_generation(list_IDs_temp, list_ys_temp)
+        X, y = self.__data_generation(list_IDs_temp, list_ys_temp, self.third_dimension)
         print('Get Item : ', X.shape)
         print('Get Item : ', y.shape)
         return X, y
@@ -93,9 +94,7 @@ class DataGenerator(keras.utils.Sequence):
                         break 
                 if xslice_idx == num_slices and yslice_idx == num_slices:
                     break 
-        # Return view of data (slice a larger array than there is info) 
-         x1 = X[:x_slice_idx, :, :, :].astype(np.float32)
-         y1 = y[:y_slice_ix, :, :, :].astype(np.float32)
-        # # print(x1.dtype)
-         return x1, y1
+        x1 = X[:x_slice_idx, :, :, :].astype(np.float32)
+        y1 = y[:y_slice_ix, :, :, :].astype(np.float32)
+        return x1, y1
       
