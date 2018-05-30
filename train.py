@@ -13,27 +13,21 @@ def train():
     partition['x_val'],
     partition['y_val'],
     partition['x_test'],
-    partition['y_test'])  = load_data('data', split=(40,40,20), DEBUG=True)
-	print(partition['x_train'])
-	print(partition['y_train'])
-	print(partition['x_val'])
-	print(partition['y_val'])
-	print(partition['x_test'])
-	print(partition['y_test'])
-
+    partition['y_test'])  = load_data('data', split=(10,10,80), DEBUG=True, third_dimension=True)
 
 
 	params = {
 				'dim': (150,256,256),
 	            'batch_size': 1,
 	            'n_channels': 1,
-	            'shuffle': True
+	            'shuffle': True,
+                    'third_dimension': True
              }
 
 	training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
 	validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
 	testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
-
+	training_generator[1]
 	print('Loaded Data')
 
 
@@ -48,8 +42,8 @@ def train():
                     validation_data=training_generator,
                     #steps_per_epoch = 1,
                     validation_steps = 1,
-                    epochs=70, 
                     verbose=0)
+	model.save_weights('unet_3d_binary_cross_entropy.hdfs')
 
 	print('Predicting ...')
 	predict = model.predict_generator(generator=training_generator)
