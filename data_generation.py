@@ -76,7 +76,7 @@ class DataGenerator(keras.utils.Sequence):
               
                 x_data = np.swapaxes(nib.load(ID).get_data().astype(np.float32), 0, -1)
                 y_data = np.swapaxes(nib.load(list_ys_temp[i]).get_data().astype(np.float32), 0, -1)
-                if x_data[0] < self.dim[0]:
+                if x_data.shape[0] < self.dim[0]:
                     x_data = self.resize_image(x_data) 
                     y_data = self.resize_image(y_data)
 
