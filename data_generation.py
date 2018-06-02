@@ -41,7 +41,7 @@ class DataGenerator(keras.utils.Sequence):
 
 
     def resize_image(self, image):
-        new_dims = tuple((image.shape[0] + (150 - image.shape[0]), image.shape[1], image.shape[2]))
+        new_dims = tuple((image.shape[0] + (self.dim[0] - image.shape[0]), image.shape[1], image.shape[2]))
         new_image = np.zeros(new_dims)
         new_image[:image.shape[0], :image.shape[1], :image.shape[2]] = image 
         return new_image 
@@ -64,8 +64,8 @@ class DataGenerator(keras.utils.Sequence):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
         print('Generating...')
         # Initialization
-        X = np.empty((self.batch_size, self.n_channels, 150, self.dim[1], self.dim[2]))
-        y = np.empty((self.batch_size, self.n_channels, 150, self.dim[1], self.dim[2]))
+        X = np.empty((self.batch_size, self.n_channels, self.dim[0], self.dim[1], self.dim[2]))
+        y = np.empty((self.batch_size, self.n_channels, self.dim[0], self.dim[1], self.dim[2]))
         # Need to split larger image into slices
        
         x_slice_idx = 0
@@ -80,7 +80,7 @@ class DataGenerator(keras.utils.Sequence):
               
                 x_data = np.swapaxes(nib.load(ID).get_data().astype(np.float32), 0, -1)
                 y_data = np.swapaxes(nib.load(list_ys_temp[i]).get_data().astype(np.float32), 0, -1)
-                if x_data[0] < 150:
+                if x_data[0] < self.dim[0]:
                     x_data = self.resize_image(x_data) 
                     y_data = self.resize_image(y_data)
 

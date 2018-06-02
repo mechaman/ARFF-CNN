@@ -24,7 +24,7 @@ def train():
 
 
 	params = {
-				'dim': (150,256,256),
+				'dim': (160,256,256),
 	            'batch_size': 1,
 	            'n_channels': 1,
 	            'shuffle': True,
@@ -39,7 +39,7 @@ def train():
 
 
 	print('Instantiate 3D-Unet') 
-	model = unet.unet()
+	model = unet.unet((1,160,256,256))
 	print(model)
 
 	model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
