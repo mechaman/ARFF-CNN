@@ -1,4 +1,3 @@
-
 from data_loader import *
 import numpy as np
 import nibabel as nib
@@ -77,11 +76,7 @@ class DataGenerator(keras.utils.Sequence):
               
                 x_data = np.swapaxes(nib.load(ID).get_data().astype(np.float32), 0, -1)
                 y_data = np.swapaxes(nib.load(list_ys_temp[i]).get_data().astype(np.float32), 0, -1)
-<<<<<<< HEAD
                 if x_data[0] < self.dim[0]:
-=======
-                if x_data.shape[0] < 150:
->>>>>>> 4ce211ddce89e8128842a09e9d71cf5dbd127c05
                     x_data = self.resize_image(x_data) 
                     y_data = self.resize_image(y_data)
 
