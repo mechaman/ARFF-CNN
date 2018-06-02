@@ -15,7 +15,6 @@ def save_img(img, fn = 'd_mask.nii'):
 def train():
 	K.clear_session()
 	partition = {}
-<<<<<<< HEAD
 	model = unet.unet((1,160,256,256))
 	with tf.device('/cpu:0'):
 		(partition['x_train'],

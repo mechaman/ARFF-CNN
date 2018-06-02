@@ -75,6 +75,6 @@ def unet(inputShape=(1,None,256,256)):
         model = Model(input = inputs, output = conv10)
 
         #model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
-        model.compile(optimizer = Adam(lr = 1e-4), loss = 'mse', metrics = ['mse', dice_coef])
+        model.compile(optimizer = Adam(lr = 1e-4), loss = 'mse', metrics = ['mse', dice_coefficient])
         
         return model
