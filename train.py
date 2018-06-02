@@ -7,7 +7,7 @@ import nibabel as nib
 import pdb 
 import tensorflow as tf
 
-def save_img(self, img, fn = 'd_mask.nii'):
+def save_img(img, fn = 'd_mask.nii'):
 	img_nii = nib.Nifti1Image(img, np.eye(4))
 	img_nii.to_filename(os.path.join('.', fn))
 	return True
@@ -15,6 +15,7 @@ def save_img(self, img, fn = 'd_mask.nii'):
 def train():
 	K.clear_session()
 	partition = {}
+<<<<<<< HEAD
 	model = unet.unet((1,160,256,256))
 	with tf.device('/cpu:0'):
 		(partition['x_train'],
@@ -61,13 +62,6 @@ def train():
 		for img_name in (partition['x_train'])[0:5]:
 			print(img_name)
     
-
-
-
-
-
-
-
 
 
 

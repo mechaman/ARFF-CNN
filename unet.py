@@ -11,7 +11,7 @@ import nibabel as nib
 import pdb
 
 
-def unet(inputShape=(1,150,256,256)):
+def unet(inputShape=(1,None,256,256)):
        
     # paddedShape = (data_ch.shape[1]+2, data_ch.shape[2]+2, data_ch.shape[3]+2, data_ch.shape[4])
 
@@ -78,5 +78,3 @@ def unet(inputShape=(1,150,256,256)):
         model.compile(optimizer = Adam(lr = 1e-4), loss = 'mse', metrics = ['mse', dice_coef])
         
         return model
-
-
