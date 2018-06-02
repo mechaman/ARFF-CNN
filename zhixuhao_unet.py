@@ -1,7 +1,7 @@
 # Force Keras to use CPU
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+#os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import numpy as np
 from keras.models import *
 from keras.layers import Input, merge, Conv2D, MaxPooling2D, UpSampling2D, Dropout, Cropping2D
@@ -163,40 +163,54 @@ class myUnet(object):
 
         model = Model(input = inputs, output = conv10)
 
-        #model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
-        model.compile(optimizer = Adam(lr = 1e-4), loss = dice_coef_loss, metrics = ['accuracy', dice_coef])
+        model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
+        #model.compile(optimizer = Adam(lr = 1e-4), loss = dice_coef_loss, metrics = ['accuracy', dice_coef])
         
         return model
     
+    def predict_side(self):
+        # io file_path 
+        fp = 'slice_data_side'
+        
+        # Loading Test Data
+        (_,
+         _,
+         _,
+         _,
+         x_test,
+             y_test)  = load_data('slice_data_side', split=(0, 0, 100))
+        
+        # Parameters
+        params = {'dim': (256,256),
+                  'batch_size': 1,
+                  'n_channels': 1,
+                  'shuffle': False}
+        
+        # Create testing_generator
+        testing_generator = DataGenerator(x_test, y_test, **params)
+        print(len(testing_generator))
+
+
+        
+        # Instantiate UNET
+        print("Instantiate UNET")
+        model = load_model('unet.hdf5') 
+        model.load_weights('unet_weights.hdf5')
+        
+        # Predict w. model
+        print('Predicting w. Model...')
+        #predicted_masks = model.predict_generator(generator=testing_generator)
+        idx = 0
+        for i in range(len(testing_generator)):
+            x_batch,_ = testing_generator[i]
+            predicted_mask = model.predict_on_batch(x=x_batch)  
+            # Save predicted masks
+            self.save_predictions([y_test[i]], predicted_mask)
+            idx+=1
+        
+
     
-    
-    def expandDataSet(self, data, samples=1):
-        ''' Input : data -> x, y
-            Output : x, y
-            Takes in an iterator and iterates through each image to make
-            each slice its own example. Each image is (256, 256, 150) and
-            the output data set will be (Number_Of_Images, 256, 256, 1) where
-            the Number_Of_Images = original number of images x 150. 
-        '''
-        # hardcode 150 for now
-        number_images = len(data)*150
-        x_list = []
-        y_list = []
-        i = 0
-        for imgs_in, imgs_lab in data:
-            if i == samples:
-                break
-            #print(imgs_in.shape)
-            x = imgs_in[0, :, :, None, 74]
-            y = imgs_lab[0, :, :, None, 74]
-            # Normalize
-            #x,y = self.normalizeImg(x,y)
-            x_list.append(x)
-            y_list.append(y)
-            i+=1
-        return np.array(x_list),np.array(y_list)
-    
-    def train3(self):
+    def train_side(self):
         print("Loading Data.")
         # Partition data : x_train, y_train, ... , x_test, y_test
         partition = {}
@@ -205,7 +219,7 @@ class myUnet(object):
          partition['x_val'],
          partition['y_val'],
          partition['x_test'],
-         partition['y_test'])  = load_data('slice_data_side', split=(0.005,0.005,99.99))
+         partition['y_test'])  = load_data('slice_data_side', split=(99.99,0.005,0.005))
         print('shape of training x :' , len(partition['x_train']))
         
         
@@ -224,27 +238,28 @@ class myUnet(object):
         
         print("Instantiate UNET")
         # Check if checkpoint exists
-        #model = load_model('unet.hdf5') 
-        #model = model.load_weights('unet_weights.hdf5')
+        #model = self.get_unet()
+        model = load_model('unet.hdf5') 
+        model.load_weights('unet_weights.hdf5')
         #else:
-        model = self.get_unet()
-        model_checkpoint = ModelCheckpoint('unet_dice.hdf5', monitor='dice_coef_loss',verbose=1,
+        model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1,
                                            save_best_only=True)
         
+        '''
         print('Fitting Model...')
-        csv_logger = CSVLogger('log_dice.csv', append=True, separator=';')
+        csv_logger = CSVLogger('log_all_data.csv', append=True, separator=';')
         model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
                     #steps_per_epoch = 1,
                     validation_steps = 1,
-                    epochs=3,
+                    epochs=2,
                     verbose=1,
                     callbacks =[model_checkpoint, csv_logger],
                     use_multiprocessing=True,
                     workers=6)
         # Save weights
-        model.save_weights('unet_dice_weights.hdf5')
-        
+        model.save_weights('unet_weights.hdf5')
+        '''
         # Save losses & accuracies 
         #print(history.val_losses)
         #print(history.losses)
@@ -262,96 +277,20 @@ class myUnet(object):
         #@DEBUG 
         for img_name in (partition['x_train'])[0:5]:
             print(img_name)
-        
-    def train2(self):
-        from keras import backend as K
-        K.clear_session()
-        print("Loading Data.")
-        # Partition data : x_train, y_train, ... , x_test, y_test
-        partition = {}
-        (partition['x_train'],
-         partition['y_train'],
-         partition['x_val'],
-         partition['y_val'],
-         partition['x_test'],
-         partition['y_test'])  = load_data('data', split=(1,1,98))
-        
-        print(len(partition['x_train']))
-        print(len(partition['y_train']))
-        # Parameters
-        params = {'dim': (256,256),
-                  'batch_size': 1,
-                  'n_channels': 1,
-                  'shuffle': True}
 
-        # Generators
-        training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
         
-        validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
-        #testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
-        print('Loaded Data')
-        
-        print("Instantiate UNET")
-        model = self.get_unet()
-        model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
-        
-        print('Fitting Model...')
-        model.fit_generator(generator=training_generator,
-                    validation_data=validation_generator,
-                    steps_per_epoch = 1,
-                    validation_steps = 1,
-                    epochs=1,
-                    verbose=1,
-                    callbacks =[model_checkpoint],
-                    use_multiprocessing=True,
-                    workers=6)
-        
-         
-    def train(self):
-        print("Loading Data.")
-        #(X_train, y_train, X_val, y_val, X_test, y_test)  = load_data('data', split=(90,5,5))
-        #train_dset = Dataset(X_train, y_train, batch_size=1)
-        #val_dset = Dataset(X_val, y_val, batch_size=1)
-        #test_dset = Dataset(X_val, y_val, batch_size=1)
-        
-        ## Generate slices
-       # x_train, y_train = self.expandDataSet(train_dset, samples=150)
-        #x_val, y_val = self.expandDataSet(val_dset)
-        #x_test, y_test = self.expandDataSet(test_dset)
-        
-        
-        print("Finished Loading Data.")
-        
-        model = self.get_unet()
-        print(model.summary())
-        '''
-        print("Instantiate UNET")
-        
-        model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
-     
-        print('Fitting model...')
-        
-        print('Training Model...')
+    def save_predictions(self, file_names, predictions):
+        # Iterate through filenames and save predictions
+        for idx, fn in enumerate(file_names):
+            print(fn)
+            pred_fn = fn.replace('mask', 'mask_pred')
+            self.save_img(predictions[idx], fn = pred_fn)
+            print(pred_fn, ' saved!') 
 
-        model.fit(x_train, y_train, batch_size=1, nb_epoch=2, validation_data= (x_val, y_val), verbose=1, callbacks=[model_checkpoint])
-        
-        print('Trained Model')
-        
-        print('Predict Test Data')
-        print('xtrain shape', x_train.shape)
-        a_slice = x_train[3, None, :, :]
-        print('shape : ', a_slice.shape)
-        #import time
-        #t0 = time.time()
-        imgs_mask_test = model.predict(a_slice, batch_size=1, verbose=1)
-        #t1 = time.time()
-        #print(t1-t0)
-        self.save_img(imgs_mask_test)
-        '''
-
-    def save_img(self, img, fn = 'd_mask.nii'):
+    def save_img(self, img, fp = '.', fn = 'd_mask.nii'):
         img_nii = nib.Nifti1Image(img, np.eye(4))
-        img_nii.to_filename(os.path.join('.', fn))
+        fn = fn.replace('side/', 'side_pred/')
+        img_nii.to_filename(os.path.join(fp, fn))
         return True
 
 
@@ -359,7 +298,7 @@ class myUnet(object):
 
 if __name__ == '__main__':
     myunet = myUnet()
-    myunet.train3()
+    myunet.predict_side()
     #myunet.save_img()
 
 
