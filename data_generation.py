@@ -80,8 +80,8 @@ class DataGenerator(keras.utils.Sequence):
                     x_data = self.resize_image(x_data) 
                     y_data = self.resize_image(y_data)
 
-                x_data = self.normalizeImg(x_data) 
-                y_data = self.normalizeImg(y_data) 
+#                x_data = self.normalizeImg(x_data) 
+#                y_data = self.normalizeImg(y_data) 
                 
                 X[x_slice_idx,] = x_data
                 y[y_slice_ix,] = y_data
