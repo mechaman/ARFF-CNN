@@ -226,6 +226,18 @@ class myUnet(object):
         
         return model
     
+    def evaluate(self, model, test_gen):
+        idx = 0
+        for i in range(len(test_gen)):
+            x_batch,y_batch = testing_generator[i]
+            predicted_mask = model.predict_on_batch(x=x_batch) 
+            # Compute dice coef. b.w. predicted_mask and y_batch (size1)
+            
+            
+            # Save predicted masks
+            #self.save_predictions([y_test[i]], predicted_mask)
+            #idx+=1
+    
     def predict_side(self):
         # io file_path 
         fp = 'slice_data_side'
@@ -268,73 +280,6 @@ class myUnet(object):
         
 
     
-    def train_side(self):
-        print("Loading Data.")
-        # Partition data : x_train, y_train, ... , x_test, y_test
-        partition = {}
-        (partition['x_train'],
-         partition['y_train'],
-         partition['x_val'],
-         partition['y_val'],
-         partition['x_test'],
-         partition['y_test'])  = load_data('slice_data_side', split=(99.99,0.005,0.005))
-        print('shape of training x :' , len(partition['x_train']))
-        
-        
-        # Parameters
-        params = {'dim': (256,256),
-                  'batch_size': 1,
-                  'n_channels': 1,
-                  'shuffle': True}
-        training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
-        validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
-        #testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
-        
-        print(len(training_generator))
-        
-        print('Loaded Data')
-        
-        print("Instantiate UNET")
-        # Check if checkpoint exists
-        #model = self.get_unet()
-        model = load_model('unet.hdf5') 
-        model.load_weights('unet_weights.hdf5')
-        #else:
-        model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1,
-                                           save_best_only=True)
-        
-        '''
-        print('Fitting Model...')
-        csv_logger = CSVLogger('log_all_data.csv', append=True, separator=';')
-        model.fit_generator(generator=training_generator,
-                    validation_data=validation_generator,
-                    #steps_per_epoch = 1,
-                    validation_steps = 1,
-                    epochs=2,
-                    verbose=1,
-                    callbacks =[model_checkpoint, csv_logger],
-                    use_multiprocessing=True,
-                    workers=6)
-        # Save weights
-        model.save_weights('unet_weights.hdf5')
-        '''
-        # Save losses & accuracies 
-        #print(history.val_losses)
-        #print(history.losses)
-        #print(type(history.losses))
-        #np.savetxt('val_losses.txt', np.array(history.val_losses), delimiter=",")
-        #np.savetxt('losses.txt', np.array(history.losses), delimiter=",")
-
-        
-        
-        print('Predicting w. Model...')
-        predict = model.predict_generator(generator=training_generator)
-        self.save_img(predict[2], fn='d_mask2.nii')
-        self.save_img(predict[1], fn='d_mask1.nii')
-        self.save_img(predict[0], fn='d_mask0.nii')
-        #@DEBUG 
-        for img_name in (partition['x_train'])[0:5]:
-            print(img_name)
 
         
     def save_predictions(self, file_names, predictions):
