@@ -33,8 +33,9 @@ def train():
 	    partition['x_test'],
 	    partition['y_test'])  = load_data('data', split=(10,10,80), DEBUG=True, third_dimension=True)
 #		print(partition['x_train'][0], partition['y_train'][0])
-		partition['x_train'] = [partition['x_train'][0]]
-		partition['y_train'] = [partition['y_train'][0]]
+#		partition['x_train'] = [partition['x_train'][0]]
+#		partition['y_train'] = [partition['y_train'][0]]
+#		print(partition['x_train'], partition['y_train'])
 		params = {
 					'dim': (160,256,256),
 		            'batch_size': 1,
@@ -60,7 +61,7 @@ def train():
 	                    validation_data=training_generator,
 	                    #steps_per_epoch = 1,
 	                    validation_steps = 1,
-		  	    epochs=1,
+		  	    epochs=5,
 	                    verbose=1)
 		model.save_weights('unet_3d_binary_cross_entropy.hdfs')
 
