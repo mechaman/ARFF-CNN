@@ -1,3 +1,4 @@
+from __future__ import division
 from data_loader import *
 import numpy as np
 import nibabel as nib
@@ -46,9 +47,10 @@ class DataGenerator(keras.utils.Sequence):
 
     def normalizeImg(self, x):
         # Normalize x
+	mean_val = np.mean(x)
         max_val = np.max(x)
         min_val = np.min(x)
-        norm_x = (x-min_val)/(max_val - min_val + 1e-7)
+        norm_x = (x-mean_val)/(max_val - min_val + 1e-7)
         return norm_x
 
     def on_epoch_end(self):
@@ -80,8 +82,8 @@ class DataGenerator(keras.utils.Sequence):
                     x_data = self.resize_image(x_data) 
                     y_data = self.resize_image(y_data)
 
-#                x_data = self.normalizeImg(x_data) 
-#                y_data = self.normalizeImg(y_data) 
+                x_data = self.normalizeImg(x_data) 
+                y_data = self.normalizeImg(y_data) 
                 
                 X[x_slice_idx,] = x_data
                 y[y_slice_ix,] = y_data

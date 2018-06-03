@@ -50,14 +50,17 @@ def train():
 
 		print('Instantiate 3D-Unet') 
 
-		model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
+		model_checkpoint = ModelCheckpoint('unet_regres.hdf5', monitor='loss',verbose=1, save_best_only=True)
 
 
 		model.fit_generator(generator=training_generator,
-	                    validation_data=training_generator,
+	                    validation_data=validation_generator,
 	                    #steps_per_epoch = 1,
 	                    validation_steps = 1,
-		  	    epochs=10,
+		  	    epochs=2,
+			    callbacks = [model_checkpoint],
+			    use_multiprocessing=True,
+			    workers=6,
 	                    verbose=1)
 		model.save_weights('unet_3d_regression.hdfs')
 
