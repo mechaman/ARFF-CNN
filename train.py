@@ -10,7 +10,7 @@ import tensorflow as tf
 import os
 from metrics import dice_coefficient
 import argparse
-
+import time
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--evaluate', default=False, action='store_true') 
@@ -31,17 +31,21 @@ def save_prediction(file_names, predictions):
 
 
 
-def predict(validation_generator, test_set):
+def predict(model, validation_generator, test_set):
 	print('Predicting ...')
 	for i in range(len(validation_generator)):
 		if i == 5:
 			break
 		x_batch, _ = validation_generator[i] 
+		start = time.time() 
 		predicted_mask = model.predict_on_batch(x=x_batch)
+		end = time.time() 
+		print('Prediction time:', end - start) 
 		save_prediction(test_set, predicted_mask)
 
 
-def evaluate(test_generator, test_sets):
+def evaluate():
+	partition = {}
 	model = load_model('unet_regres.hdf5', custom_objects={'dice_coefficient': dice_coefficient}) 
 	model.load_weights('unet_3d_regression.hdfs')
 	(_,
@@ -59,10 +63,10 @@ def evaluate(test_generator, test_sets):
             'third_dimension': True
      }
 
-	testing_generator = DataGenerator(('data/IXI365-Guys-0923-T1.nii'), ('data/IXI365-Guys-0923-T1_defaced.nii'), **params)
+	testing_generator = DataGenerator(['data/IXI365-Guys-0923-T1.nii'], ['data/IXI365-Guys-0923-T1_defaced.nii'], **params)
 
 
-	predict(testing_generator, [partition['y_train'][i]])
+	predict(model, testing_generator, ['data/IXI365-Guys-0923-T1.nii'])
 
 
 def train():
@@ -112,7 +116,7 @@ def train():
 		model.save_weights('unet_3d_regression.hdfs')
 
 		print('Predicting ...')
-		predict(validation_generator, [partition['y_val'][i]])
+		predict(model, validation_generator, [partition['y_val'][i]])
 #		predict = model.predict_generator(generator=training_generator)
 #		pdb.set_trace()
 		# for i in range(len(validation_generator)):
