@@ -55,7 +55,7 @@ def unet(inputShape=(1,None,256,256)):
         up6 = Conv3D(128, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size=2, data_format='channels_first')(drop5))
         merge6 = merge([drop4,up6], mode = 'concat', concat_axis = 1)
         conv6 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge6)
-        conv6 = Conv3D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv6)
+        conv6 = Conv3D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv6)
 
         up7 = Conv3D(64, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(UpSampling3D(size=2, data_format='channels_first')(conv6))
         merge7 = merge([conv3,up7], mode = 'concat', concat_axis = 1)
@@ -72,7 +72,7 @@ def unet(inputShape=(1,None,256,256)):
         conv9 = Conv3D(16, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge9)
         conv9 = Conv3D(16, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv9)
         conv9 = Conv3D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv9)
-        conv10 = Conv3D(1, 1, activation = 'sigmoid', data_format='channels_first')(conv9)
+        conv10 = Conv3D(1, 1, activation='sigmoid', data_format='channels_first')(conv9)
 
         model = Model(input = inputs, output = conv10)
 

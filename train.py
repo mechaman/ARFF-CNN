@@ -33,8 +33,8 @@ def train():
 	    partition['x_test'],
 	    partition['y_test'])  = load_data('data', split=(10,10,80), DEBUG=True, third_dimension=True)
 #		print(partition['x_train'][0], partition['y_train'][0])
-#		partition['x_train'] = [partition['x_train'][0]]
-#		partition['y_train'] = [partition['y_train'][0]]
+		partition['x_train'] = [partition['x_train'][0]]
+		partition['y_train'] = [partition['y_train'][0]]
 		params = {
 					'dim': (160,256,256),
 		            'batch_size': 1,
@@ -65,7 +65,7 @@ def train():
 		model.save_weights('unet_3d_binary_cross_entropy.hdfs')
 
 		print('Predicting ...')
-		predict = model.predict_generator(generator=training_generator)
+#		predict = model.predict_generator(generator=training_generator)
 		for i in range(len(training_generator)):
 			if i == 3:
 				break
