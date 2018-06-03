@@ -70,19 +70,19 @@ def writeSlices(img_data,
 
 ### File Management ###
 input_data_dir = './data'
-output_data_dir = './slice_data_side'
+output_data_dir = './slice_data_top'
 # total_files : list(tuple(normal, defaced))
 total_files = get_file_list_from_dir(input_data_dir, y_label='_defaced')
 print(len(total_files))
 i = 0
-view = [True, False, False]
+view = [False, False, True]
 ### Slicing & Outputing Files ###
 for file in total_files:
     normal = file[0]
     defaced = file[1]
     print('Patient: ', normal)
     # Output file path
-    output_fp = normal.replace('data', 'slice_data_side')
+    output_fp = normal.replace('data', 'slice_data_top')
     # Check if normal and defaced image exist
     if (not os.path.isfile(normal) or not os.path.isfile(defaced)):
         print(normal, 'or', defaced, 'doesn\'t exist?')
