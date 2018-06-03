@@ -1,4 +1,5 @@
 import numpy as np
+from keras import backend as K
 
 ''' Dice Coefficient Metric '''
 def dice_coefficient(y_true, y_pred, smooth=1.):
