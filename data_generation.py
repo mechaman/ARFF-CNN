@@ -47,7 +47,7 @@ class DataGenerator(keras.utils.Sequence):
 
     def normalizeImg(self, x):
         # Normalize x
-	mean_val = np.mean(x)
+        mean_val = np.mean(x)
         max_val = np.max(x)
         min_val = np.min(x)
         norm_x = (x-mean_val)/(max_val - min_val + 1e-7)
