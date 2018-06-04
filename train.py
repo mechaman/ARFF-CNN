@@ -24,7 +24,6 @@ def save_img(img, fn = 'd_mask.nii'):
 	return True
 
 def save_prediction(file_names, predictions):
-	pdb.set_trace()
 	for idx, fn in enumerate(file_names):
 		pred_fn = '3dpreds/' + os.path.basename(os.path.normpath(os.path.splitext(fn)[0])) + '_pred.nii'  
 		save_img(predictions[idx], fn=pred_fn) 
@@ -68,6 +67,7 @@ def evaluate():
 	validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
 	for index, filename in enumerate(validation_generator):
 		x_batch, _ = validation_generator[index]
+		print('dealing with file', validation_generator.list_IDs[index])
 		predicted_mask = model.predict_on_batch(x=x_batch)
 		save_prediction([partition['y_val'][index]], predicted_mask)
 
