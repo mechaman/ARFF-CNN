@@ -24,6 +24,7 @@ def save_img(img, fn = 'd_mask.nii'):
 	return True
 
 def save_prediction(file_names, predictions):
+	pdb.set_trace()
 	for idx, fn in enumerate(file_names):
 		pred_fn = '3dpreds/' + os.path.basename(os.path.normpath(os.path.splitext(fn)[0])) + '_pred.nii'  
 		save_img(predictions[idx], fn=pred_fn) 
@@ -50,23 +51,25 @@ def evaluate():
 	model.load_weights('unet_3d_regression.hdfs')
 	(_,
 	    _,
+	    partition['x_val'],
+	    partition['y_val'],
 	    _,
-	    _,
-	    partition['x_test'],
-	    partition['y_test'])  = load_data('data', split=(0,0,10), DEBUG=True, third_dimension=True)
+	    _)  = load_data('data', split=(10,10,0), DEBUG=True, third_dimension=True)
 
+	print('Number of images to mask', len(partition['x_val']))
 	params = {
 		'dim': (160,256,256),
-        'batch_size': 1,
-        'n_channels': 1,
-        'shuffle': True,
-            'third_dimension': True
-     }
+        	'batch_size': 1,
+        	'n_channels': 1,
+        	'shuffle': False,
+                'third_dimension': True
+	     	}
 
-	testing_generator = DataGenerator(['data/IXI365-Guys-0923-T1.nii'], ['data/IXI365-Guys-0923-T1_defaced.nii'], **params)
-
-
-	predict(model, testing_generator, ['data/IXI365-Guys-0923-T1.nii'])
+	validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
+	for index, filename in enumerate(validation_generator):
+		x_batch, _ = validation_generator[index]
+		predicted_mask = model.predict_on_batch(x=x_batch)
+		save_prediction([partition['y_val'][index]], predicted_mask)
 
 
 def train():
