@@ -15,6 +15,7 @@ import time
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--evaluate', default=False, action='store_true') 
 
+parser.add_argument('--restore', default=False, action='store_true') 
 
 args = parser.parse_args()
 
@@ -32,7 +33,6 @@ def save_prediction(file_names, predictions):
 
 
 def predict(model, validation_generator, test_set):
-	print('Predicting ...')
 	for i in range(len(validation_generator)):
 		if i == 5:
 			break
@@ -41,7 +41,7 @@ def predict(model, validation_generator, test_set):
 		predicted_mask = model.predict_on_batch(x=x_batch)
 		end = time.time() 
 		print('Prediction time:', end - start) 
-		save_prediction(test_set, predicted_mask)
+		save_prediction([test_set[i]], predicted_mask)
 
 
 def evaluate():
@@ -72,64 +72,59 @@ def evaluate():
 		save_prediction([partition['y_val'][index]], predicted_mask)
 
 
-def train():
+def train(restore=False):
 	K.clear_session()
 #	pdb.set_trace()
 	partition = {}
-	model = unet_three_d.unet((1,160,256,256))
+	if not restore:
+		model = unet_three_d.unet((1,160,256,256))
+		print('Instantiated new 3D-Unet') 
+
+	if restore:
+		model = load_model('unet_regres.hdf5', custom_objects={'dice_coefficient': dice_coefficient}) 
+		model.load_weights('unet_3d_regression.hdfs')
+		print('Restored 3D-Unet from latest checkpoint file.')  
+
 	print(model.summary())
-	with tf.device('/cpu:0'):
-		(partition['x_train'],
-	    partition['y_train'],
-	    partition['x_val'],
-	    partition['y_val'],
-	    partition['x_test'],
-	    partition['y_test'])  = load_data('data', split=(10,10,0), DEBUG=True, third_dimension=True)
-#		print(partition['x_train'][0], partition['y_train'][0])
-#		partition['x_train'] = [partition['x_train'][0]]
-#		partition['y_train'] = [partition['y_train'][0]]
-#		print(partition['x_train'], partition['y_train'])
-		params = {
-					'dim': (160,256,256),
-		            'batch_size': 1,
-		            'n_channels': 1,
-		            'shuffle': True,
-	                    'third_dimension': True
-	             }
-
-		training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
-		validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
-	#	testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
-		print('Loaded Data')
-
-		print('Instantiate 3D-Unet') 
-
-		model_checkpoint = ModelCheckpoint('unet_regres.hdf5', monitor='loss',verbose=1, save_best_only=True)
-
-		
-		model.fit_generator(generator=training_generator,
-	                    validation_data=validation_generator,
-	                    #steps_per_epoch = 1,
-	                    validation_steps = 1,
-		  	    epochs=10,
-			    callbacks = [model_checkpoint],
-			    use_multiprocessing=True,
-			    workers=6,
-	                    verbose=1)
-		model.save_weights('unet_3d_regression.hdfs')
-
-		print('Predicting ...')
-		predict(model, validation_generator, [partition['y_val'][i]])
-#		predict = model.predict_generator(generator=training_generator)
-#		pdb.set_trace()
-		# for i in range(len(validation_generator)):
-		# 	if i == 5:
-		# 		break
-		# 	x_batch, _ = validation_generator[i] 
-		# 	predicted_mask = model.predict_on_batch(x=x_batch)
-		# 	save_prediction([partition['y_val'][i]], predicted_mask)
+	(partition['x_train'],
+    partition['y_train'],
+    partition['x_val'],
+    partition['y_val'],
+    partition['x_test'],
+    partition['y_test'])  = load_data('data', split=(10,10,0), DEBUG=True, third_dimension=True)
 
 
+	params = {
+				'dim': (160,256,256),
+	            'batch_size': 1,
+	            'n_channels': 1,
+	            'shuffle': True,
+                    'third_dimension': True
+             }
+
+	training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
+	validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
+#	testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
+	print('Loaded Data')
+
+
+	model_checkpoint = ModelCheckpoint('unet_regres.hdf5', monitor='loss',verbose=1, save_best_only=True)
+
+	
+	model.fit_generator(generator=training_generator,
+                    validation_data=validation_generator,
+                    #steps_per_epoch = 1,
+                    validation_steps = 1,
+	  	    epochs=10,
+		    callbacks = [model_checkpoint],
+		    use_multiprocessing=True,
+		    workers=6,
+                    verbose=1)
+	model.save_weights('unet_3d_regression.hdfs')
+
+	print('Predicting ...')
+	predict(model, validation_generator, partition['y_val'])
+#
 
 
 
@@ -138,5 +133,7 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 	if args.evaluate:
 		evaluate() 
+	elif args.restore:
+		train(True) 
 	else:
 		train() 
