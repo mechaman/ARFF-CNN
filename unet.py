@@ -8,26 +8,14 @@ from keras.layers import Input, merge, Conv2D, MaxPooling2D, UpSampling2D, Dropo
 from keras.optimizers import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, Callback, CSVLogger
 from keras import backend as keras
+from keras.utils.training_utils import multi_gpu_model
+
 
 from data_loader import *
 from data_generator import DataGenerator
 from metrics import dice_coef
 from losses import dice_coef_loss
 
-class LossHistory(Callback):
-    def on_train_begin(self, logs={}):
-        self.losses = []
-        self.val_losses = []
-        self.mse = []
-        self.val_mse = []
-
-    def on_batch_end(self, batch, logs={}):
-        # Loss
-        self.losses.append(logs.get('loss'))
-        self.val_losses.append(logs.get('val_loss'))
-        # MSE
-        self.mse.append(logs.get('mean_squared_error'))
-        self.val_mse.append(logs.get('val_mean_squared_error'))
         
 class myUnet(object):
 
@@ -221,78 +209,36 @@ class myUnet(object):
         conv10 = Conv2D(1, 1, activation = 'sigmoid')(conv9)
 
         model = Model(input = inputs, output = conv10)
-
+        #multi_model = multi_gpu_model(model, gpus=2)
         model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
         
         return model
     
-    def evaluate(self, model, test_gen):
-        idx = 0
+    def predict(self, model, test_gen, y_test_fn, view, set_type):
+         
         for i in range(len(test_gen)):
-            x_batch,y_batch = testing_generator[i]
+            x_batch,y_batch = test_gen[i]
             predicted_mask = model.predict_on_batch(x=x_batch) 
-            # Compute dice coef. b.w. predicted_mask and y_batch (size1)
-            
             
             # Save predicted masks
-            #self.save_predictions([y_test[i]], predicted_mask)
-            #idx+=1
+            self.save_predictions([y_test_fn[i]],
+                                  predicted_mask,
+                                  view=view,
+                                  set_type=set_type)
+            
     
-    def predict_side(self):
-        # io file_path 
-        fp = 'slice_data_side'
-        
-        # Loading Test Data
-        (_,
-         _,
-         _,
-         _,
-         x_test,
-             y_test)  = load_data('slice_data_side', split=(0, 0, 100))
-        
-        # Parameters
-        params = {'dim': (256,256),
-                  'batch_size': 1,
-                  'n_channels': 1,
-                  'shuffle': False}
-        
-        # Create testing_generator
-        testing_generator = DataGenerator(x_test, y_test, **params)
-        print(len(testing_generator))
-
-
-        
-        # Instantiate UNET
-        print("Instantiate UNET")
-        model = load_model('unet.hdf5') 
-        model.load_weights('unet_weights.hdf5')
-        
-        # Predict w. model
-        print('Predicting w. Model...')
-        #predicted_masks = model.predict_generator(generator=testing_generator)
-        idx = 0
-        for i in range(len(testing_generator)):
-            x_batch,_ = testing_generator[i]
-            predicted_mask = model.predict_on_batch(x=x_batch)  
-            # Save predicted masks
-            self.save_predictions([y_test[i]], predicted_mask)
-            idx+=1
-        
-
-    
-
-        
-    def save_predictions(self, file_names, predictions):
+    def save_predictions(self, file_names, predictions, view, set_type):
         # Iterate through filenames and save predictions
         for idx, fn in enumerate(file_names):
-            print(fn)
             pred_fn = fn.replace('mask', 'mask_pred')
-            self.save_img(predictions[idx], fn = pred_fn)
-            print(pred_fn, ' saved!') 
+            pred_fp = pred_fn.replace((set_type + '/'), (set_type+'_pred/'))
+            #print('predicted fn : ', pred_fp)
+            self.save_img(predictions[idx], fn = pred_fp)
+            print(pred_fp, ' saved!') 
+            
 
     def save_img(self, img, fp = '.', fn = 'd_mask.nii'):
         img_nii = nib.Nifti1Image(img, np.eye(4))
-        fn = fn.replace('side/', 'side_pred/')
         img_nii.to_filename(os.path.join(fp, fn))
         return True
 

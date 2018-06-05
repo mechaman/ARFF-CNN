@@ -51,6 +51,15 @@ class DataGenerator(keras.utils.Sequence):
         min_val = np.min(x)
         norm_x = (x-min_val)/(max_val - min_val + 1e-7)
         return norm_x
+    
+    def padImage(self, img):
+        x_dim = img.shape[0]
+        y_dim = img.shape[1]
+        if x_dim == y_dim:
+            return img
+        else:
+            pad_w = x_dim - y_dim
+            return np.pad(img, [(0,0), (0,pad_w), (0,0)], mode='constant')
 
     def __data_generation(self, list_IDs_temp, list_ys_temp):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
@@ -61,9 +70,9 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             # Store sample
-            X[i, ] = self.normalizeImg((nib.load(ID).get_data().astype(np.float32))[:, :, np.newaxis])
+            X[i, ] = self.padImage(self.normalizeImg((nib.load(ID).get_data().astype(np.float32))[:, :, np.newaxis]))
             # Store sample segmentation
-            y[i, ]  = self.normalizeImg((nib.load(list_ys_temp[i]).get_data().astype(np.float32))[:, :, np.newaxis])
+            y[i, ]  = self.padImage(self.normalizeImg((nib.load(list_ys_temp[i]).get_data().astype(np.float32))[:, :, np.newaxis]))
 
         return X, y
 
