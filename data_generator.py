@@ -52,14 +52,22 @@ class DataGenerator(keras.utils.Sequence):
         norm_x = (x-min_val)/(max_val - min_val + 1e-7)
         return norm_x
     
-    def padImage(self, img):
+    def padImage(self, img, mask=False):
         x_dim = img.shape[0]
         y_dim = img.shape[1]
         if x_dim == y_dim:
             return img
         else:
             pad_w = x_dim - y_dim
-            return np.pad(img, [(0,0), (0,pad_w), (0,0)], mode='constant')
+            if mask:
+                return np.pad(img, [(0,0), (0,pad_w), (0,0)],
+                              mode='constant',
+                              constant_values=(1))
+            else:
+                return np.pad(img, [(0,0), (0,pad_w), (0,0)],
+                              mode='constant')
+                
+                
 
     def __data_generation(self, list_IDs_temp, list_ys_temp):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
