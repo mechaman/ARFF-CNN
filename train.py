@@ -29,8 +29,8 @@ def train_zhi_unet(slice_type='side', dim = (256,256), epochs=2):
     partition['y_test'])  = load_data(train_dir, split=(80, 10, 10))
     
     # Save x_val to text file
-    x_val_fn = ('./val_logs/val_' + slice_type + '.txt')
-    np.savetxt(x_val_fn, np.array(partition['x_val']), delimiter=',', fmt="%s")
+    #x_val_fn = ('./val_logs/val_' + slice_type + '.txt')
+    #np.savetxt(x_val_fn, np.array(partition['x_val']), delimiter=',', fmt="%s")
     
     # Parameters for input data
     params1 = {'dim': dim,
@@ -53,31 +53,32 @@ def train_zhi_unet(slice_type='side', dim = (256,256), epochs=2):
     unet = myUnet(img_rows=dim[0], img_cols=dim[1])
     model = unet.get_unet_zhi()
     # Initialize multi_model
-    model.load_weights(weights_fp)
-    multi_model = multi_gpu_model(model, gpus=2)
-    multi_model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
-    #model_fp = ('./models/' + model_prefix + '.hdf5')
-    #model_checkpoint = ModelCheckpoint(model_fp, monitor='loss',verbose=1,
-                                      # save_best_only=True)
-    print(multi_model.summary())
+    #model.load_weights(weights_fp)
+    #multi_model = multi_gpu_model(model, gpus=2)
+    #multi_model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
+    model_fp = ('./models/' + model_prefix + '.hdf5')
+    model_checkpoint = ModelCheckpoint(model_fp, monitor='loss',verbose=1,
+                                       save_best_only=True)
+    #print(multi_model.summary())
 
     # Train UNet
     print('Fitting Model...')
-    log_fp = ('./logs/' + model_prefix + '.csv')
+    log_fp = ('./logs/' + model_prefix + '2.csv')
     csv_logger = CSVLogger(log_fp, append=True, separator=';')
-    multi_model.fit_generator(generator=training_generator,
+    model.fit_generator(generator=training_generator,
             validation_data=validation_generator,
             validation_steps = 1,
             epochs=epochs,
             verbose=1,
-            callbacks =[csv_logger],
+            callbacks =[model_checkpoint, csv_logger],
             use_multiprocessing=True,
             workers=6)
     
     # Save weights
     #print(multi_model.summary())
-    model = multi_model.get_layer('model_1')
+    #model = multi_model.get_layer('model_1')
     model.save_weights(weights_fp)
+                                  
 
 def predict(slice_type='side'):
 	# @DEBUG MAKE SURE WORKS!!!!
@@ -171,5 +172,5 @@ if __name__ == '__main__':
     #train_basic_unet(slice_type='side')
     #train_zhi_unet(slice_type='side', dim = (256, 256), epochs=1)
     #train_zhi_unet(slice_type='top', dim = (256, 256), epochs=3)
-    train_zhi_unet(slice_type='back', dim=(256, 256), epochs=3)
+    train_zhi_unet(slice_type='back', dim=(256, 256), epochs=2)
     

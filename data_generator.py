@@ -80,7 +80,7 @@ class DataGenerator(keras.utils.Sequence):
             # Store sample
             X[i, ] = self.padImage(self.normalizeImg((nib.load(ID).get_data().astype(np.float32))[:, :, np.newaxis]))
             # Store sample segmentation
-            y[i, ]  = self.padImage(self.normalizeImg((nib.load(list_ys_temp[i]).get_data().astype(np.float32))[:, :, np.newaxis]))
+            y[i, ]  = self.padImage(self.normalizeImg((nib.load(list_ys_temp[i]).get_data().astype(np.float32))[:, :, np.newaxis]), mask=True)
 
         return X, y
 
