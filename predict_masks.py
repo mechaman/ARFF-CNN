@@ -1,6 +1,6 @@
 import os
-#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
-#os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import numpy as np
 from keras.optimizers import *
 from keras.models import *
@@ -46,5 +46,5 @@ def predict_mask(slice_type, set_type='val'):
     unet.predict(model, test_generator, y_test, slice_type, set_type)
 
 # Run predict_mask over each slice_type
-predict_mask(slice_type='back', set_type='val')
+predict_mask(slice_type='side', set_type='test')
     

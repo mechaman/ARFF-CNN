@@ -52,11 +52,13 @@ def train_zhi_unet(slice_type='side', dim = (256,256), epochs=2):
     print("Instantiate UNET")
     unet = myUnet(img_rows=dim[0], img_cols=dim[1])
     model = unet.get_unet_zhi()
+    
     # Initialize multi_model
-    #model.load_weights(weights_fp)
+    model.load_weights(weights_fp)
     #multi_model = multi_gpu_model(model, gpus=2)
     #multi_model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
     model_fp = ('./models/' + model_prefix + '.hdf5')
+    #model = load_model(model_fp)
     model_checkpoint = ModelCheckpoint(model_fp, monitor='loss',verbose=1,
                                        save_best_only=True)
     #print(multi_model.summary())
@@ -146,6 +148,7 @@ def train_basic_unet(slice_type = 'side'):
     unet = myUnet()
     model = unet.get_unet_basic()
     model_fp = ('./models/' + model_prefix + '.hdf5')
+    model = model.load
     model_checkpoint = ModelCheckpoint(model_fp, monitor='loss',verbose=1,
                                            save_best_only=True)
     print(model.summary())
@@ -171,6 +174,6 @@ def train_basic_unet(slice_type = 'side'):
 if __name__ == '__main__':
     #train_basic_unet(slice_type='side')
     #train_zhi_unet(slice_type='side', dim = (256, 256), epochs=1)
-    #train_zhi_unet(slice_type='top', dim = (256, 256), epochs=3)
-    train_zhi_unet(slice_type='back', dim=(256, 256), epochs=2)
+    #train_zhi_unet(slice_type='top', dim = (256, 256), epochs=1)
+    train_zhi_unet(slice_type='back', dim=(256, 256), epochs=1)
     
