@@ -1,4 +1,4 @@
-import unet_three_d
+import unet
 from keras import backend as K
 from keras.models import *
 from data_loader import *
@@ -77,7 +77,7 @@ def train(restore=False):
 #	pdb.set_trace()
 	partition = {}
 	if not restore:
-		model = unet_three_d.unet((1,160,256,256))
+		model = unet.unet((1,160,256,256))
 		print('Instantiated new 3D-Unet') 
 
 	if restore:
