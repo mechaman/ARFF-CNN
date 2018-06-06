@@ -3,7 +3,7 @@ from keras import backend as K
 from keras.models import *
 from data_loader import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
-from data_generation import DataGenerator
+from data_generation import DataGenerator, resize_image
 import nibabel as nib
 import pdb 
 import tensorflow as tf
@@ -17,6 +17,8 @@ parser.add_argument('--evaluate', default=False, action='store_true')
 
 parser.add_argument('--restore', default=False, action='store_true') 
 
+parser.add_argument('--speed_test', default=False, action='store_true') 
+
 args = parser.parse_args()
 
 def save_img(img, fn = 'd_mask.nii'):
@@ -29,6 +31,53 @@ def save_prediction(file_names, predictions):
 		pred_fn = 'test_predictions2/' + os.path.basename(os.path.normpath(os.path.splitext(fn)[0])) + '_pred.nii'  
 		save_img(predictions[idx], fn=pred_fn) 
 		print(pred_fn, 'saved.')
+
+
+
+def speed_test(model):
+
+	model = load_model('unet_regres.hdf5', custom_objects={'dice_coefficient': dice_coefficient}) 
+
+	(_,
+	    _,
+	   	_,
+	    _,
+	    partition['x_test'],
+	    partition['y_test'])  = load_data('test_set_mri', split=(0,0,100), DEBUG=False, third_dimension=True)
+
+	print('Number of images to mask', len(partition['x_test']))
+
+	params = {
+			'dim': (160,256,256),
+        	'batch_size': 1,
+        	'n_channels': 1,
+        	'shuffle': False,
+            'third_dimension': True
+	     	}
+
+	testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
+	avg_time = [] 
+	for index, filename in enumerate(testing_generator):
+		x_batch, _ = testing_generator[index]
+		file = testing_generator.list_IDs[index]
+		print('Predicting', file)
+		norm_image = nib.load(file.replace('test_set_mri/', 'data/')).get_data()
+		norm_image = np.swapaxes(resize_image(np.swapaxes(norm_image, 0, -1)), 0, -1)
+		start = start.time()
+		predicted_mask = model.predict_on_batch(x=x_batch)
+		predicted_mask = np.squeeze(predicted_mask)
+		# alternative_mask = predicted_mask.copy() 
+		less_indices = predicted_mask < 0.5
+		higher_indics = predicted_mask >= 0.5
+		predicted_mask[less_indices] = 0
+		predicted_mask[higher_indics] = 1
+		predicted_mask = np.swapaxes(predicted_mask, 0, -1) 
+#         print(norm_data.shape, alternative_mask.shape)
+		norm_output = predicted_mask * norm_image
+		end = time.time()
+		avg_time.append((end - start))
+	print(np.mean(avg_time))
+
 
 
 
