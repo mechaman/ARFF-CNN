@@ -44,7 +44,21 @@ class DataGenerator(keras.utils.Sequence):
         new_image[:image.shape[0], :image.shape[1], :image.shape[2]] = image 
         return new_image 
 
+    def create_mask(self, norm, defaced):
+	output = defaced.copy() - norm.copy() 
+	output[output < 0] = 0 
+	output[output > 0] = 1 
+	return output
+    
+    def getMaskData(self, normal, defaced):
+       normalized_norm = ((normal - np.min(defaced))/
+                      (np.max(normal)-np.min(defaced)))
+        delta = defaced - normalized_norm
+        delta[delta >= 0] = 1.0
+        delta[delta < 0] = 0.0
+        return delta
 
+    def 
     def normalizeImg(self, x):
         # Normalize x
         mean_val = np.mean(x)
@@ -82,8 +96,9 @@ class DataGenerator(keras.utils.Sequence):
                     x_data = self.resize_image(x_data) 
                     y_data = self.resize_image(y_data)
 
-                x_data = self.normalizeImg(x_data) 
-                y_data = self.normalizeImg(y_data) 
+                #x_data = self.normalizeImg(x_data) 
+                y_data = self.getMaskData(x_data, y_data)
+		x_data = self.normalizeImg2(x_data)
                 
                 X[x_slice_idx,] = x_data
                 y[y_slice_ix,] = y_data
