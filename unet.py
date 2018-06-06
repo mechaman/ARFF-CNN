@@ -70,11 +70,11 @@ def unet(inputShape=(1,None,256,256)):
         conv9 = Conv3D(8, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(merge9)
         conv9 = Conv3D(8, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv9)
         conv9 = Conv3D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal', data_format='channels_first')(conv9)
-        conv10 = Conv3D(1, 1, data_format='channels_first')(conv9)
+        conv10 = Conv3D(1, 1, activation = 'sigmoid', data_format='channels_first')(conv9)
 
         model = Model(input = inputs, output = conv10)
 
-        model.compile(optimizer = Adam(lr = 1e-4), loss = 'mse', metrics = [dice_coefficient])
+        model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['mse', 'accuracy', dice_coefficient])
 #        model.compile(optimizer = keras.optimizers.SGD(lr = 1e-12, decay=1e-6, nesterov=True, momentum=0.9), loss = 'mse', metrics = ['mse', dice_coefficient])
         
         return model
