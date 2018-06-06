@@ -10,7 +10,7 @@ def dice_coef(mask_true, mask_pred, threshold = 0.5):
 	inv_mask_pred = 1.0-mask_pred
 	# Compute Dice Coeff
 	d = ((2.0 * np.sum( inv_mask_pred[inv_mask_true == 1.0]) /
-		(np.sum(inv_mask_true) + np.sum(inv_mask_pred))))
+		(np.sum(inv_mask_true) + np.sum(inv_mask_pred) + 1e-9)))
 	return d  
 
 ''' Dice (Jaccard)  Coefficient Metric '''

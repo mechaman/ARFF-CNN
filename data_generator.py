@@ -60,11 +60,11 @@ class DataGenerator(keras.utils.Sequence):
         else:
             pad_w = x_dim - y_dim
             if mask:
-                return np.pad(img, [(0,0), (0,pad_w), (0,0)],
+                return np.pad(img, [(0,0), (pad_w//2,pad_w//2), (0,0)],
                               mode='constant',
                               constant_values=(1))
             else:
-                return np.pad(img, [(0,0), (0,pad_w), (0,0)],
+                return np.pad(img, [(0,0), (pad_w//2,pad_w//2), (0,0)],
                               mode='constant')
                 
                 
@@ -80,7 +80,7 @@ class DataGenerator(keras.utils.Sequence):
             # Store sample
             X[i, ] = self.padImage(self.normalizeImg((nib.load(ID).get_data().astype(np.float32))[:, :, np.newaxis]))
             # Store sample segmentation
-            y[i, ]  = self.padImage(self.normalizeImg((nib.load(list_ys_temp[i]).get_data().astype(np.float32))[:, :, np.newaxis]), mask=True)
+            y[i, ]  = self.padImage((nib.load(list_ys_temp[i]).get_data().astype(np.float32))[:, :, np.newaxis], mask=True)
 
         return X, y
 

@@ -24,17 +24,22 @@ def computeAverageDice(thresh, pred_dir, gt_dir, n_samples = 500):
         mask_pred_fn = mask_y.replace('_mask', '_mask_pred')
         mask_pred_fp = mask_pred_fn.replace(gt_dir, pred_dir)
         # Read in files
-        mask_pred = (nib.load(mask_pred_fp)).get_data()
         mask_gt = (nib.load(mask_y)).get_data()
+        # If dir. doesn't contain side
+        if 'side' not in pred_dir:
+            mask_pred = ((nib.load(mask_pred_fp)).get_data())[:, :mask_gt.shape[1], :]
+        else:
+            mask_pred = (nib.load(mask_pred_fp)).get_data()
         # Dice Coefficient computation
         dc = dice_coef(mask_gt, mask_pred, threshold = thresh)
         dc_list.append(dc)
         # Compute dice coef.
-        '''
+        
         if idx%100 == 0:
             print('Avg. Dice Coefficient : ', np.mean(dc_list))
+            #print(dc)
             print('Example Number', idx)
-        '''
+        
         idx+=1
         
     return(np.mean(dc_list))

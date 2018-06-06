@@ -218,15 +218,16 @@ class myUnet(object):
          
         for i in range(len(test_gen)):
             # Temp:
-            if '75.nii' in y_test_fn[i]:
-                x_batch,y_batch = test_gen[i]
-                predicted_mask = model.predict_on_batch(x=x_batch) 
 
-                # Save predicted masks
-                self.save_predictions([y_test_fn[i]],
-                                      predicted_mask,
-                                      view=view,
-                                      set_type=set_type)
+            x_batch,y_batch = test_gen[i]
+            predicted_mask = model.predict_on_batch(x=x_batch) 
+
+            # Save predicted masks
+            self.save_predictions([y_test_fn[i]],
+                                  predicted_mask,
+                                  view=view,
+                                  set_type=set_type)
+            
             
     
     def save_predictions(self, file_names, predictions, view, set_type):
