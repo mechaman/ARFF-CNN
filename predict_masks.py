@@ -46,5 +46,5 @@ def predict_mask(slice_type, set_type='val'):
     unet.predict(model, test_generator, y_test, slice_type, set_type)
 
 # Run predict_mask over each slice_type
-predict_mask(slice_type='back', set_type='val')
+predict_mask(slice_type='top', set_type='test')
     

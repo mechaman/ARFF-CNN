@@ -54,7 +54,7 @@ def train_zhi_unet(slice_type='side', dim = (256,256), epochs=2):
     model = unet.get_unet_zhi()
     
     # Initialize multi_model
-    model.load_weights(weights_fp)
+    #model.load_weights(weights_fp)
     #multi_model = multi_gpu_model(model, gpus=2)
     #multi_model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
     model_fp = ('./models/' + model_prefix + '.hdf5')
@@ -65,7 +65,7 @@ def train_zhi_unet(slice_type='side', dim = (256,256), epochs=2):
 
     # Train UNet
     print('Fitting Model...')
-    log_fp = ('./logs/' + model_prefix + '2.csv')
+    log_fp = ('./logs/' + model_prefix + '3.csv')
     csv_logger = CSVLogger(log_fp, append=True, separator=';')
     model.fit_generator(generator=training_generator,
             validation_data=validation_generator,
@@ -174,6 +174,6 @@ def train_basic_unet(slice_type = 'side'):
 if __name__ == '__main__':
     #train_basic_unet(slice_type='side')
     #train_zhi_unet(slice_type='side', dim = (256, 256), epochs=1)
-    #train_zhi_unet(slice_type='top', dim = (256, 256), epochs=1)
-    train_zhi_unet(slice_type='back', dim=(256, 256), epochs=1)
+    train_zhi_unet(slice_type='top', dim = (256, 256), epochs=3)
+    #train_zhi_unet(slice_type='back', dim=(256, 256), epochs=1)
     

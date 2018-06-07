@@ -23,6 +23,9 @@ def computeAverageDice(thresh, pred_dir, gt_dir, n_samples = 500):
         # Construct predicted filepath
         mask_pred_fn = mask_y.replace('_mask', '_mask_pred')
         mask_pred_fp = mask_pred_fn.replace(gt_dir, pred_dir)
+        if not os.path.isfile(mask_pred_fp):
+            continue
+
         # Read in files
         mask_gt = (nib.load(mask_y)).get_data()
         # If dir. doesn't contain side
