@@ -28,7 +28,7 @@ def save_img(img, fn = 'd_mask.nii'):
 
 def save_prediction(file_names, predictions):
 	for idx, fn in enumerate(file_names):
-		pred_fn = '3dpreds/' + os.path.basename(os.path.normpath(os.path.splitext(fn)[0])) + '_pred.nii'  
+		pred_fn = 'test_predictions2/' + os.path.basename(os.path.normpath(os.path.splitext(fn)[0])) + '_pred.nii'  
 		save_img(predictions[idx], fn=pred_fn) 
 		print(pred_fn, 'saved.')
 
@@ -95,16 +95,16 @@ def predict(model, validation_generator, test_set):
 
 def evaluate():
 	partition = {}
-	model = load_model('unet_regres.hdf5', custom_objects={'dice_coefficient': dice_coefficient}) 
-	model.load_weights('unet_3d_regression.hdfs')
+	model = load_model('unet_3d_bse.hdf5', custom_objects={'dice_coefficient': dice_coefficient}) 
+	#model.load_weights('unet_3d_regression.hdfs')
 	(_,
 	    _,
 	    partition['x_val'],
 	    partition['y_val'],
 	    _,
-	    _)  = load_data('data', split=(10,10,0), DEBUG=True, third_dimension=True)
+	    _)  = load_data('test_set_mri', split=(0,100,0), DEBUG=True, third_dimension=True)
 
-	print('Number of images to mask', len(partition['x_val']))
+ 	print('Number of images to mask', len(partition['x_val']))
 	params = {
 		'dim': (160,256,256),
         	'batch_size': 1,
@@ -130,8 +130,8 @@ def train(restore=False):
 		print('Instantiated new 3D-Unet') 
 
 	if restore:
-		model = load_model('unet_regres.hdf5', custom_objects={'dice_coefficient': dice_coefficient}) 
-		model.load_weights('unet_3d_regression.hdfs')
+		model = load_model('unet_3d_bse.hdf5', custom_objects={'dice_coefficient': dice_coefficient}) 
+		#model.load_weights('unet_3d_binary_cross_entropy.hdfs')
 		print('Restored 3D-Unet from latest checkpoint file.')  
 
 	print(model.summary())
@@ -140,24 +140,24 @@ def train(restore=False):
     partition['x_val'],
     partition['y_val'],
     partition['x_test'],
-    partition['y_test'])  = load_data('data', split=(10,10,0), DEBUG=True, third_dimension=True)
+    partition['y_test'])  = load_data('data', split=(0,10,0), DEBUG=True, third_dimension=True)
 
 
 	params = {
-				'dim': (160,256,256),
+		    'dim': (160,256,256),
 	            'batch_size': 1,
 	            'n_channels': 1,
 	            'shuffle': True,
                     'third_dimension': True
              }
 
-	training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
+	#training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params)
 	validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params)
 #	testing_generator = DataGenerator(partition['x_test'], partition['y_test'], **params)
 	print('Loaded Data')
 
 
-	model_checkpoint = ModelCheckpoint('unet_regres.hdf5', monitor='loss',verbose=1, save_best_only=True)
+	model_checkpoint = ModelCheckpoint('unet_3d_bse.hdf5', monitor='loss',verbose=1, save_best_only=True)
 
 	
 	model.fit_generator(generator=training_generator,
@@ -169,7 +169,7 @@ def train(restore=False):
 		    use_multiprocessing=True,
 		    workers=6,
                     verbose=1)
-	model.save_weights('unet_3d_regression.hdfs')
+	model.save_weights('unet_3d_binary_cross_entropy.hdfs')
 
 	print('Predicting ...')
 	predict(model, validation_generator, partition['y_val'])
