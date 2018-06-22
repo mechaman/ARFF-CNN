@@ -5,8 +5,16 @@ from random import shuffle
 from math import floor 
 import nibabel as nib
 import numpy as np
+import re
 
 from data_loader import *
+
+def writeProbVolume(vol, patient_id):
+    ''' Save Patient Data '''
+    output_fn = (patient_id + '_mask.nii')
+    img_nii = nib.Nifti1Image(vol, np.eye(4))
+    img_nii.to_filename(output_fn)
+
 
 def getImgData(fn):
     return(nib.load(fn).get_data())
@@ -70,7 +78,7 @@ def writeSlices(img_data,
 
 ### File Management ###
 input_data_dir = './test_set_mri_new/test_set_mri'
-output_data_dir = './slice_data_side_test'
+output_data_dir = './3D_test/'
 # total_files : list(tuple(normal, defaced))
 total_files = get_file_list_from_dir(input_data_dir, y_label='_defaced')
 print(len(total_files))
@@ -80,7 +88,9 @@ view = [True, False, False]
 for file in total_files:
     normal = file[0]
     defaced = file[1]
-    print('Patient: ', normal)
+    patient_id = re.search('\./test_set_mri_new/test_set_mri/(.*)\.nii',
+                       normal).group(1)
+    print('Patient: ', patient_id)
     # Output file path
     output_fp = normal.replace(input_data_dir, output_data_dir)
     # Check if normal and defaced image exist
@@ -93,11 +103,17 @@ for file in total_files:
     # Gen. mask data
     mask_data = getMaskData(norm_data,
                             def_data)
+    print(patient_id)
+    writeProbVolume(mask_data, (output_data_dir + patient_id))
+    print('Done!')
+    
+    '''
     ## Write Slices of Original & Mask data
     if writeSlices(norm_data, output_fp, mask=False, view=view):
         print('Normal Success! : ', output_fp)
     
     if writeSlices(mask_data, output_fp, mask=True, view=view):
         print('Mask Success! : ', output_fp)
+    '''
     
     

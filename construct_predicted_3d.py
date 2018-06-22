@@ -3,7 +3,13 @@ import nibabel as nib
 import re
 import os
 
-output_fp = './3D_test'
+def writeProbVolume(vol, slice_type):
+    ### Save Patient Data ###
+    output_fn = (patient_id + '_mask_pred_' + slice_type +'.nii')
+    img_nii = nib.Nifti1Image(vol, np.eye(4))
+    img_nii.to_filename(os.path.join(output_fp, output_fn))
+
+output_fp = './3D_test/Prob_Vols'
 test_fp = './test_set_mri_new/test_set_mri'
 test_files = get_file_list_from_dir(test_fp, y_label='_defaced')
 
@@ -21,8 +27,10 @@ for patient_fn,_ in test_files:
     pad = (X-Z)//2
 
     
-    # Allocate tensor
-    patient_output = np.zeros((X,Y,Z))
+    # Allocate tensors
+    patient_output_side = np.zeros((X,Y,Z))
+    patient_output_back = np.zeros((X,Y,Z))
+    patient_output_top = np.zeros((X,Y,Z))
     
     ### Side Slices ###
     side_fp = './slice_data_side_test_pred/'
@@ -37,7 +45,10 @@ for patient_fn,_ in test_files:
         # Read data
         side_data = nib.load(side_slice_fp).get_data()
         # Push to patient output
-        patient_output[:,:,z_idx] = side_data[:,:,0]
+        patient_output_side[:,:,z_idx] = side_data[:,:,0]
+        
+    ### Output 3D Prob. Volume per side predictions ###
+    writeProbVolume(patient_output_side, slice_type='side')
         
 
     # Top Slices
@@ -53,7 +64,10 @@ for patient_fn,_ in test_files:
         # Read data
         top_data = nib.load(top_slice_fp).get_data()
         # Push to patient output
-        patient_output[x_idx,:,:] = top_data[:,pad:-pad,0]
+        patient_output_top[x_idx,:,:] = top_data[:,pad:-pad,0]
+        
+    ### Output 3D Prob. Volume per side predictions ###
+    writeProbVolume(patient_output_top, slice_type='top')
 
     # Back Slices
     back_fp = './slice_data_back_test_pred/'
@@ -68,10 +82,7 @@ for patient_fn,_ in test_files:
         # Read data
         back_data = nib.load(back_slice_fp).get_data()
         # Push to patient output
-        patient_output[:,y_idx,:] = top_data[:,pad:-pad,0]
-    
-    ### Save Patient Data ###
-    output_fn = (patient_id + '_mask_pred.nii')
-    img_nii = nib.Nifti1Image(patient_output, np.eye(4))
-    img_nii.to_filename(os.path.join(output_fp, output_fn))
-    break
+        patient_output_back[:,y_idx,:] = top_data[:,pad:-pad,0]
+        
+    ### Output 3D Prob. Volume per side predictions ###
+    writeProbVolume(patient_output_back, slice_type='back')
