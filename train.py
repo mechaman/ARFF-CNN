@@ -13,7 +13,7 @@ import argparse
 import time
 
 
-# Need to add documentation to everything!
+# Need to add documentation to everything.
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--evaluate', default=False, action='store_true') 
