@@ -118,20 +118,16 @@ class myUnet(object):
         #drop5 = Dropout(0.5)(conv5)
 
         up6 = Conv2D(512, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv5))
-        print("up6 shape:", up6.shape)
         merge6 = merge([crop4,up6], mode = 'concat', concat_axis = 3)
-        print('hello')
         conv6 = Conv2D(512, 3, activation = 'relu', padding = 'valid', kernel_initializer = 'he_normal')(merge6)
         conv6 = Conv2D(512, 3, activation = 'relu', padding = 'valid', kernel_initializer = 'he_normal')(conv6)
 
         up7 = Conv2D(256, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv6))
-        print("up7 shape:", up7.shape)
         merge7 = merge([crop3,up7], mode = 'concat', concat_axis = 3)
         conv7 = Conv2D(256, 3, activation = 'relu', padding = 'valid', kernel_initializer = 'he_normal')(merge7)
         conv7 = Conv2D(256, 3, activation = 'relu', padding = 'valid', kernel_initializer = 'he_normal')(conv7)
 
         up8 = Conv2D(128, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv7))
-        print("up8 shape:", up8.shape)
         merge8 = merge([crop2,up8], mode = 'concat', concat_axis = 3)
         conv8 = Conv2D(128, 3, activation = 'relu', padding = 'valid', kernel_initializer = 'he_normal')(merge8)
         conv8 = Conv2D(128, 3, activation = 'relu', padding = 'valid', kernel_initializer = 'he_normal')(conv8)
