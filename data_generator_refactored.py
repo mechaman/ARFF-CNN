@@ -1,6 +1,7 @@
 import keras
 import numpy as np
 import nibabel as nib
+from pathlib import Path
 
 
 
@@ -15,8 +16,13 @@ class DataGenerator(keras.utils.Sequence):
         self.list_IDs = examples
         self.n_channels = n_channels
         self.shuffle = shuffle
+        # Add an index var. to keep track of location
+        self.index = 0
         self.on_epoch_end()
 
+    def next(self):
+        'Get the next element in the generator'
+        return self.__getitem__(self.index)
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -33,7 +39,8 @@ class DataGenerator(keras.utils.Sequence):
         
         # Generate data
         X, y = self.__data_generation(list_IDs_temp, list_ys_temp)
-
+        # Update index
+        self.index+=1
         return X, y
 
     def on_epoch_end(self):
@@ -86,6 +93,10 @@ class DataGenerator(keras.utils.Sequence):
         for i, ID in enumerate(list_IDs_temp):
             # @TODO remove when file name consistent
             ID = ID.replace('.gz', '')
+            # Check if file exists, continue if not
+            if not Path(ID).is_file():
+                print(ID, ' is missing.') 
+                continue
             # Store sample
             X[i, ] = self.padImage(self.normalizeImg(nib.load(ID).get_data().astype(np.float32)))
             # Store sample segmentation

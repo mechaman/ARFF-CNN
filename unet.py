@@ -1,6 +1,7 @@
 # Force Keras to use CPU
 import os
-#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+# Enable to run on cpu only
+#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 #os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import numpy as np
 from keras.models import *
