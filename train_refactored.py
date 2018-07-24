@@ -19,24 +19,74 @@ def get_2dUnet(dim=(256, 256)):
     model = unet.get_unet()
     return model
 
-def train_2dUnet(model, data, slice_type='side'):
+def train_side(model, data, batch_size):
+    '''
+    Train on the side data.
+    '''
+    # Set input & output masks
+    input_img = (data[0])[0,:,:,:]
+    output_mask = (data[1])[0,:,:,:]
+    # Prepare aux. vars. for iter. train on batch
+    T, B, S = input_img.shape
+    num_batches = int(np.ceil(S/batch_size))
+    # Batch of side slices
+    side_slice_batch_x = None
+    side_slice_batch_y = None
+    # Train on each batch@TODO
+    for batch_num in range(0, num_batches):
+        s_idx = batch_num*batch_size
+        # Check if last batch
+        if batch_num == (num_batches-1):
+            side_slice_batch_x = input_img[:,:,s_idx:]
+            side_slice_batch_y = output_mask[:,:,s_idx:]
+        else:
+            f_idx = s_idx + batch_size
+            print(s_idx, f_idx) 
+            side_slice_batch_x = input_img[:, :, s_idx:f_idx]
+            side_slice_batch_y= output_mask[:, :, s_idx:f_idx]
+        # Flip axes to make index to iterate over first 
+        side_slice_batch_x = np.swapaxes(np.swapaxes(side_slice_batch_x,0,2), 1,2)[:,:,:,np.newaxis]
+        side_slice_batch_y = np.swapaxes(np.swapaxes(side_slice_batch_y,0,2), 1,2)[:,:,:,np.newaxis]
+        print(side_slice_batch_x.shape, side_slice_batch_y.shape)
+        loss, dice = model.train_on_batch(side_slice_batch_x, side_slice_batch_y)
+    return loss, dice
+
+def train_top(model, data, batch_size):
+    '''
+    Train on top data.
+    '''
+    pass
+
+def train_back(model, data, batch_size):
+    '''
+    Train on back data.
+    '''
+    pass
+
+def train_2dUnet(model, data, batch_size, slice_type='side'):
     '''
     Input -> slice : str, dim : (int, int)
     Train the unet on approp. slice
     '''
     # Construct model & weight fp(s) 
-    model_prefix = 'zhi_unet_' + slice_type
+    model_prefix = '2dunet_' + slice_type
     weights_fp = ('./weights/' + model_prefix + '.hdf5')
     model_fp = ('./models/' + model_prefix + '.hdf5')
     model_checkpoint = ModelCheckpoint(model_fp, monitor='loss',verbose=1,
                                        save_best_only=True)
     #@TODO Add train_on_batch and return list of [bce, dice]
-
+     
+    if slice_type == 'side':
+        metrics = train_side(model, data, batch_size)
+    elif slice_type == 'top':
+        pass 
+    elif slice_type == 'back':
+        pass
 
 def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):        
     sides  = 3
     dim = (256, 256)
-
+    batch_size = 32
     ## Load Data 
     print('Loading Data...')
     train_dir = './data'
@@ -46,17 +96,22 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
     partition['x_val'],
     partition['y_val'],
     partition['x_test'],
-    partition['y_test'])  = load_data(train_dir, split=(80, 10, 10))
+    partition['y_test'])  = load_partitioned_data(train_dir, split=(80, 10, 10))
+    # Define Parameters for generators
+    params1 = { 'dim': (256, 256, 256),
+                'batch_size': 1,
+                'n_channels': 1,
+                'shuffle': False}
     # Instantiate dataset generators 
     training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params1)
-    validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params2)
+    validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params1)
     
     ## Instantiate Models
     print("Instantiate Unet Ensemble")
     # Create model array 
     model_arr = []
     for i in range(3):
-        model_arr.append(get_2dunet(dim=(256,256)))
+        model_arr.append(get_2dUnet(dim=(256,256)))
     
     ## Train Models
     loss = []
@@ -70,6 +125,10 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
     ## Training Loop 
     for img in training_generator:
         #@TODO loss, dice = train_2dUnet(model_arr[0], img[:,:,?]
+        print(img[0].shape)
+        metrics = train_2dUnet(model_arr[2], img, batch_size, slice_type='side')
+        print(metrics)
+        break
     '''
     log_fp = ('./logs/' + model_prefix + '3.csv')
     csv_logger = CSVLogger(log_fp, append=True, separator=';')
@@ -129,7 +188,7 @@ def predict(slice_type='side'):
     
 
 if __name__ == '__main__':
-    train_2dunet_ensemble(dim=(256,256,256), epochs=2) 
+    train_2dUnet_ensemble(dim=(256,256,256), epochs=2) 
     #train_2d_unet(slice_type='side', dim = (256, 256), epochs=1)
     #train_2d_unet(slice_type='top', dim = (256, 256), epochs=3)
     #train_2d_unet(slice_type='back', dim=(256, 256), epochs=1)
