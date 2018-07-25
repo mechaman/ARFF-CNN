@@ -14,7 +14,6 @@ from keras.utils.training_utils import multi_gpu_model
 from data_loader import *
 from data_generator import DataGenerator
 from metrics import dice_coef
-from losses import dice_coef_loss
         
 class myUnet(object):
 
@@ -71,7 +70,7 @@ class myUnet(object):
 
         model = Model(input = inputs, output = conv10)
         #@TODO add dice coefficient as custom metric
-        model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy','mse'])
+        model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy'])#dice_coef])
         
         return model
     
