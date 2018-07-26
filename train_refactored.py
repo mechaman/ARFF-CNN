@@ -19,7 +19,30 @@ def get_2dUnet(dim=(256, 256)):
     model = unet.get_unet()
     return model
 
-def predict_side_vol(model, data, batch_size):
+def get_slice_batch(data, slice_type, s_idx, f_idx):
+    '''
+    Return a batch of slices for a particular side
+    '''
+    if slice_type == 'top':
+        return data[s_idx:f_idx, :, :]
+    elif slice_type == 'back':
+        return data[:, s_idx:f_idx, :]
+    elif slice_type == 'side':
+        return data[:, :, s_idx:f_idx]
+
+def flip_index(data, slice_type):
+    '''
+    Flips the index so that the slices are indexable by
+    the keras model for training.
+    '''
+    if slice_type == 'top':
+        return data[:, :, :, np.newaxis]
+    elif slice_type == 'back':
+        return np.swapaxes(data, 0, 1)[:,:,:,np.newaxis]
+    elif slice_type == 'side':
+        return np.swapaxes(np.swapaxes(data,0,2), 1,2)[:,:,:,np.newaxis]
+
+def predict_side_vol(model, data, batch_size, slice_type):
     '''
     Predict on the side data.
     '''
@@ -27,6 +50,7 @@ def predict_side_vol(model, data, batch_size):
     input_img = (data[0])[0,:,:,:]
     # Prepare aux. vars. for iter. train on batch
     T, B, S = input_img.shape
+    # Number of batches is invariant to dim.
     num_batches = int(np.ceil(S/batch_size))
     # Batch of side slices
     side_slice_batch_x = None
@@ -37,13 +61,15 @@ def predict_side_vol(model, data, batch_size):
         s_idx = batch_num*batch_size
         # Check if last batch
         if batch_num == (num_batches-1):
-            side_slice_batch_x = input_img[:,:,s_idx:]
+            f_idx = None
         else:
             f_idx = s_idx + batch_size
-            print(s_idx, f_idx) 
-            side_slice_batch_x = input_img[:, :, s_idx:f_idx]
+            print(s_idx, f_idx)
+        side_slice_batch_x = get_slice_batch(input_img,
+                                            slice_type,
+                                            s_idx, f_idx)
         # Flip axes to make index to iterate over first 
-        side_slice_batch_x = np.swapaxes(np.swapaxes(side_slice_batch_x,0,2), 1,2)[:,:,:,np.newaxis]
+        side_slice_batch_x = flip_index(side_slice_batch_x, slice_type = slice_type) 
         print(side_slice_batch_x.shape)
         predicted_batch.extend(model.predict_on_batch(side_slice_batch_x))
         if batch_num == 1:
@@ -194,10 +220,30 @@ def train_2dUnet(model, data, batch_size, slice_type='side'):
         loss, dice = train_back(model, data, batch_size)
     return loss, dice
 
-def predict3dMask(model_arr, input_data):
+def predict3dMask(model_arr, data, batch_size):
     '''
     Generate the 3D Mask to compute dice coef. against
     '''
+    # Predict Side Vol.
+    side_vol = predict_side_vol(model_arr[0],
+                                data, batch_size,
+                                slice_type='side')
+    print(side_vol.shape)
+    # Predict Back Vol.
+    back_vol = predict_side_vol(model_arr[1],
+                                data, batch_size,
+                                slice_type='back')
+    print(back_vol.shape)
+    # Predict Top Vol.
+    top_vol = predict_side_vol(model_arr[2],
+                                data, batch_size,
+                                slice_type='top')
+    print(top_vol.shape) 
+    # Compute avg. voxels across top, side, and back vols
+    avg_vol = np.mean([top_vol, back_vol, side_vol], axis=0)
+    
+    return avg_vol 
+
 
 def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):        
     sides  = 3
@@ -255,16 +301,13 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
         loss[2].append(img_loss)
         dice_2d[2].append(img_dice)
         ## Get 3D Dice
-        #@TODO Predict mask from img and compute dice score
-        # Predict Side Vol.
-        side_vol = predict_side_vol(model_arr[0], img, batch_size)
-        print(side_vol.shape)
-        # Predict Back Vol.
-        # Predict Top Vol.
-        # Compute 3D Dice
-
+        # Predict 3D Mask
+        mask_vol = predict3dMask(model_arr, img, batch_size)
+        # Compute dice coef. 
+        dice_3d.append(dice_coef(img[1], mask_vol, threshold=0.59))
         break
-    
+
+    print(dice_3d)
     '''
     log_fp = ('./logs/' + model_prefix + '3.csv')
     csv_logger = CSVLogger(log_fp, append=True, separator=';')
