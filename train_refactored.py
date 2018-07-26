@@ -7,6 +7,7 @@ from keras.callbacks import ModelCheckpoint, Callback, CSVLogger
 from keras.utils.training_utils import multi_gpu_model
 
 from utils_refactored import *
+from metrics import *
 from unet_refactored import myUnet
 from data_generator_refactored import DataGenerator
 
@@ -79,7 +80,7 @@ def predict_side_vol(model, data, batch_size, slice_type):
     return predicted_vol
 
 
-def train_side(model, data, batch_size):
+def train_side(model, data, batch_size, slice_type):
     '''
     Train on the side data.
     '''
@@ -88,6 +89,7 @@ def train_side(model, data, batch_size):
     output_mask = (data[1])[0,:,:,:]
     # Prepare aux. vars. for iter. train on batch
     T, B, S = input_img.shape
+    # Number of batches is invariant to dim.
     num_batches = int(np.ceil(S/batch_size))
     # Batch of side slices
     side_slice_batch_x = None
@@ -100,96 +102,22 @@ def train_side(model, data, batch_size):
         s_idx = batch_num*batch_size
         # Check if last batch
         if batch_num == (num_batches-1):
-            side_slice_batch_x = input_img[:,:,s_idx:]
-            side_slice_batch_y = output_mask[:,:,s_idx:]
+            f_idx = None 
         else:
             f_idx = s_idx + batch_size
             print(s_idx, f_idx) 
-            side_slice_batch_x = input_img[:, :, s_idx:f_idx]
-            side_slice_batch_y= output_mask[:, :, s_idx:f_idx]
-        # Flip axes to make index to iterate over first 
-        side_slice_batch_x = np.swapaxes(np.swapaxes(side_slice_batch_x,0,2), 1,2)[:,:,:,np.newaxis]
-        side_slice_batch_y = np.swapaxes(np.swapaxes(side_slice_batch_y,0,2), 1,2)[:,:,:,np.newaxis]
-        print(side_slice_batch_x.shape, side_slice_batch_y.shape)
-        metrics = model.train_on_batch(side_slice_batch_x, side_slice_batch_y)
-        loss.append(metrics[0])
-        dice.append(metrics[1])
-        break
-    # Compute the average loss and dice scores
-    avg_loss = np.mean(loss)
-    avg_dice = np.mean(dice)
-    return avg_loss, avg_dice
+        side_slice_batch_x = get_slice_batch(input_img,
+                                            slice_type,
+                                            s_idx, f_idx)
+        side_slice_batch_y= get_slice_batch(input_img,
+                                            slice_type,
+                                            s_idx, f_idx)
 
-def train_top(model, data, batch_size):
-    '''
-    Train on top data.
-    '''
-    # Set input & output masks
-    input_img = (data[0])[0,:,:,:]
-    output_mask = (data[1])[0,:,:,:]
-    # Prepare aux. vars. for iter. train on batch
-    T, B, S = input_img.shape
-    num_batches = int(np.ceil(T/batch_size))
-    # Batch of side slices
-    side_slice_batch_x = None
-    side_slice_batch_y = None
-    # Loss & Dice array
-    loss = []
-    dice = []
-    # Train on each batch
-    for batch_num in range(0, num_batches):
-        s_idx = batch_num*batch_size
-        # Check if last batch
-        if batch_num == (num_batches-1):
-            side_slice_batch_x = input_img[s_idx:,:,:]
-            side_slice_batch_y = output_mask[s_idx:,:,:]
-        else:
-            f_idx = s_idx + batch_size
-            print(s_idx, f_idx) 
-            side_slice_batch_x = input_img[s_idx:f_idx, :, :, np.newaxis]
-            side_slice_batch_y= output_mask[s_idx:f_idx, :, :, np.newaxis]
-        print(side_slice_batch_x.shape, side_slice_batch_y.shape)
-        metrics = model.train_on_batch(side_slice_batch_x, side_slice_batch_y)
-        loss.append(metrics[0])
-        dice.append(metrics[1])
-        break
-    # Compute the average loss and dice scores
-    avg_loss = np.mean(loss)
-    avg_dice = np.mean(dice)
-    return avg_loss, avg_dice
-
-def train_back(model, data, batch_size):
-    '''
-    Train on back data.
-    '''
-    # Set input & output masks
-    input_img = (data[0])[0,:,:,:]
-    output_mask = (data[1])[0,:,:,:]
-    # Prepare aux. vars. for iter. train on batch
-    T, B, S = input_img.shape
-    num_batches = int(np.ceil(B/batch_size))
-    # Batch of side slices
-    side_slice_batch_x = None
-    side_slice_batch_y = None
-    # Loss & Dice array
-    loss = []
-    dice = []
-    # Train on each batch
-    for batch_num in range(0, num_batches):
-        s_idx = batch_num*batch_size
-        # Check if last batch
-        if batch_num == (num_batches-1):
-            side_slice_batch_x = input_img[:,s_idx:,:]
-            side_slice_batch_y = output_mask[:,s_idx:,:]
-        else:
-            f_idx = s_idx + batch_size
-            print(s_idx, f_idx) 
-            side_slice_batch_x = input_img[:, s_idx:f_idx, :]
-            side_slice_batch_y= output_mask[:, s_idx:f_idx, :]
         # Flip axes to make index to iterate over first 
-        side_slice_batch_x = np.swapaxes(side_slice_batch_x,0,1)[:,:,:,np.newaxis]
-        side_slice_batch_y = np.swapaxes(side_slice_batch_y,0,1)[:,:,:,np.newaxis]
+        side_slice_batch_x = flip_index(side_slice_batch_x, slice_type=slice_type)
+        side_slice_batch_y = flip_index(side_slice_batch_y, slice_type=slice_type)
         print(side_slice_batch_x.shape, side_slice_batch_y.shape)
+        # Compute and store loss & dice
         metrics = model.train_on_batch(side_slice_batch_x, side_slice_batch_y)
         loss.append(metrics[0])
         dice.append(metrics[1])
@@ -212,15 +140,10 @@ def train_2dUnet(model, data, batch_size, slice_type='side'):
     model_checkpoint = ModelCheckpoint(model_fp, monitor='loss',verbose=1,
                                        save_best_only=True)
     #@TODO Add train_on_batch and return list of [bce, dice]
-    if slice_type == 'side':
-        loss, dice = train_side(model, data, batch_size)
-    elif slice_type == 'top':
-        loss, dice = train_top(model, data, batch_size)
-    elif slice_type == 'back':
-        loss, dice = train_back(model, data, batch_size)
+    loss, dice = train_side(model, data, batch_size, slice_type=slice_type)
     return loss, dice
 
-def predict3dMask(model_arr, data, batch_size):
+def predict_3d_mask(model_arr, data, batch_size):
     '''
     Generate the 3D Mask to compute dice coef. against
     '''
@@ -278,7 +201,7 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
     ## Train Models
     loss = []
     dice_2d = []
-    dice_3d = []
+    dice_3d_train = []
     # Create a list of loss/dice for each model
     for i in range(0,len(model_arr)):
         loss.append([])
@@ -302,73 +225,25 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
         dice_2d[2].append(img_dice)
         ## Get 3D Dice
         # Predict 3D Mask
-        mask_vol = predict3dMask(model_arr, img, batch_size)
+        mask_vol = predict_3d_mask(model_arr, img, batch_size)
         # Compute dice coef. 
-        dice_3d.append(dice_coef(img[1], mask_vol, threshold=0.59))
+        print('Output mask_vol & ground truth mask: ')
+        #TODO remove [0,0,:,:] -> [:,:,:,:] - just testing out dice_coef
+        dice_3d_train.append(dice_coef(img[1][0,0,:,:], mask_vol[0,:,:,0], threshold=0.59))
         break
-
-    print(dice_3d)
-    '''
-    log_fp = ('./logs/' + model_prefix + '3.csv')
-    csv_logger = CSVLogger(log_fp, append=True, separator=';')
-    model.fit_generator(generator=training_generator,
-            validation_data=validation_generator,
-            validation_steps = 1,
-            epochs=epochs,
-            verbose=1,
-            callbacks =[model_checkpoint, csv_logger],
-            use_multiprocessing=True,
-            workers=6)
+    print(dice_3d_train)
     
-    # Save weights
-    #print(multi_model.summary())
-    #model = multi_model.get_layer('model_1')
-    model.save_weights(weights_fp)
-    '''                              
-
-def predict(slice_type='side'):
-	# @DEBUG MAKE SURE WORKS!!!!
-	# Model prefix string for organized persistance
-    model_prefix = 'zhi_unet_' + slice_type
-    
-    # Loading Data
-    print('Loading Data...')
-    partition={}
-
-    (_,
-     _,
-     _,
-     _,
-     x_test,
-     y_test)  = load_data('slice_data_side_test', split=(0.0, 0.0, 100))
-
-    # Parameters for input data
-    params = {'dim': (256,256),
-                  'batch_size': 1,
-                  'n_channels': 1,
-                  'shuffle': True}
-    test_generator = DataGenerator(x_test, y_test, **params)
-    print('Loaded Data...')
-    
-    # Initialize UNet
-    print("Instantiate UNET")
-    unet = myUnet()
-    model = unet.get_unet_zhi()
-    model_fp = ('./models/' + model_prefix + '.hdf5')
-    model_checkpoint = ModelCheckpoint(model_fp, monitor='loss',verbose=1,
-                                           save_best_only=True)
-    weight_fp = ('./weights/' + model_prefix + '.hdf5')
-    model.load_weights(weights_fp)
-
-    # Predict using UNet
-    print("Predicting via UNet")
-    unet.predict(model, test_generator, y_test, slice_type)
+    ## Validation Loop
+    dice_3d_val = []
+    for img in validation_generator:
+        mask_vol = predict3dMask(model_arr, img, batch_size)
+        #TODO remove [0,0,:,:] -> [:, :, :, :] - just testing out dice_coef 
+        dice_3d_val.append(dice_coef(img[1][0,0,:,:], mask_vol[0,:,:,0], threshold=0.59))
+        break
+    print(dice_3d_val)
 
     
 
 if __name__ == '__main__':
     train_2dUnet_ensemble(dim=(256,256,256), epochs=2) 
-    #train_2d_unet(slice_type='side', dim = (256, 256), epochs=1)
-    #train_2d_unet(slice_type='top', dim = (256, 256), epochs=3)
-    #train_2d_unet(slice_type='back', dim=(256, 256), epochs=1)
     
