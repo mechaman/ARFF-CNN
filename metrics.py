@@ -3,8 +3,8 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
 
-''' Recall Score '''
 def rec_score(mask_true, mask_pred, threshold = 0.5):
+    ''' Recall Score '''
     # Use threshold to create a mask of 1s and 0s 
     mask_pred[mask_pred >= threshold] = 1.0
     mask_pred[mask_pred < threshold] = 0.0
@@ -18,9 +18,8 @@ def rec_score(mask_true, mask_pred, threshold = 0.5):
     rec = recall_score((inv_mask_true==1.0).flatten(), (inv_mask_pred==1.0).flatten())
     return rec
 
-
-''' Precision Score '''
 def prec_score(mask_true, mask_pred, threshold = 0.5):
+    '''Precision Score'''
     # Use threshold to create a mask of 1s and 0s 
     mask_pred[mask_pred >= threshold] = 1.0
     mask_pred[mask_pred < threshold] = 0.0
@@ -34,8 +33,8 @@ def prec_score(mask_true, mask_pred, threshold = 0.5):
     prec = precision_score((inv_mask_true==1.0).flatten(), (inv_mask_pred==1.0).flatten())
     return prec
 
-''' Dice Coefficient '''
 def dice_coef(mask_true, mask_pred, threshold = 0.5):
+    ''' Dice Coefficient '''
     # Use threshold to create a mask of 1s and 0s 
     mask_pred[mask_pred >= threshold] = 1.0
     mask_pred[mask_pred < threshold] = 0.0
@@ -50,7 +49,6 @@ def dice_coef(mask_true, mask_pred, threshold = 0.5):
         (np.sum(inv_mask_true) + np.sum(inv_mask_pred)))) #+ 1e-12)))
     return d  
 
-''' Dice (Jaccard)  Coefficient Metric '''
 def dice_coef_alt(y_true, y_pred, smooth=1):
     """
     Dice = (2*|X & Y|)/ (|X|+ |Y|)
