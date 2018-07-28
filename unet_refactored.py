@@ -11,8 +11,6 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler, Callback, CS
 from keras import backend as keras
 from keras.utils.training_utils import multi_gpu_model
 
-from data_loader import *
-from data_generator import DataGenerator
 from metrics import dice_coef
         
 class myUnet(object):

@@ -11,14 +11,30 @@ from metrics import *
 from unet_refactored import myUnet
 from data_generator_refactored import DataGenerator
 
-def get_2dUnet(dim=(256, 256)):
+def get_2dUnet(dim=(256, 256), slice_type='side', model_fp=''):
     '''
     Input -> slice : str, dim : (int, int)
     Instantiate 2d unet
     '''
-    unet = myUnet(img_rows=dim[0], img_cols=dim[1])
-    model = unet.get_unet()
+    # Construct if model_fp not specified
+    if model_fp == '':
+        unet = myUnet(img_rows=dim[0], img_cols=dim[1])
+        model = unet.get_unet()
+    else:
+        model = load_model(model_fp)
     return model
+
+def save_2dUnet(model, model_fp='', slice_type='side'):
+    '''
+    Save model.
+    '''
+
+    if model_fp == '':
+        # Construct model & weight fp(s) 
+        model_prefix = '2dunet_' + slice_type
+        model_fp = ('./models/' + model_prefix + '.hdf5')
+    save_model(model_fp)
+    return True
 
 def get_slice_batch(data, slice_type, s_idx, f_idx):
     '''
@@ -133,12 +149,8 @@ def train_2dUnet(model, data, batch_size, slice_type='side'):
     Input -> slice : str, dim : (int, int)
     Train the unet on approp. slice
     '''
-    # Construct model & weight fp(s) 
-    model_prefix = '2dunet_' + slice_type
-    weights_fp = ('./weights/' + model_prefix + '.hdf5')
-    model_fp = ('./models/' + model_prefix + '.hdf5')
-    model_checkpoint = ModelCheckpoint(model_fp, monitor='loss',verbose=1,
-                                       save_best_only=True)
+    #model_checkpoint = ModelCheckpoint(model_fp, monitor='loss',verbose=1,
+    #                                   save_best_only=True)
     #@TODO Add train_on_batch and return list of [bce, dice]
     loss, dice = train_side(model, data, batch_size, slice_type=slice_type)
     return loss, dice
@@ -170,6 +182,7 @@ def predict_3d_mask(model_arr, data, batch_size):
 
 def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):        
     sides  = 3
+    slice_types = ['back', 'top', 'side']
     dim = (256, 256)
     batch_size = 1
     ## Load Data 
@@ -196,7 +209,7 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
     # Create model array 
     model_arr = []
     for i in range(3):
-        model_arr.append(get_2dUnet(dim=(256,256)))
+        model_arr.append(get_2dUnet(dim=(256,256), slice_type=slice_types[i]))
     
     ## Train Models
     loss = []
@@ -236,12 +249,15 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
     ## Validation Loop
     dice_3d_val = []
     for img in validation_generator:
-        mask_vol = predict3dMask(model_arr, img, batch_size)
+        mask_vol = predict_3d_mask(model_arr, img, batch_size)
         #TODO remove [0,0,:,:] -> [:, :, :, :] - just testing out dice_coef 
         dice_3d_val.append(dice_coef(img[1][0,0,:,:], mask_vol[0,:,:,0], threshold=0.59))
         break
     print(dice_3d_val)
-
+    
+    ## Save the models
+    for idx, model in enumerate(model_arr):
+        save_2dUnet(model, slice_type=slice_types[idx])
     
 
 if __name__ == '__main__':
