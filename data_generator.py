@@ -19,19 +19,11 @@ class DataGenerator(keras.utils.Sequence):
         # Add an index var. to keep track of location
         self.index = 0
         self.on_epoch_end()
-<<<<<<< HEAD
     '''
     def next(self):
         'Get the next element in the generator'
         return self.__getitem__(self.index)
     '''
-=======
-
-    def next(self):
-        'Get the next element in the generator'
-        return self.__getitem__(self.index)
-
->>>>>>> 2762a2c26d5e9500f607cdad8257ccec9d7929a7
     def __len__(self):
         'Denotes the number of batches per epoch'
         return int(np.floor(len(self.list_IDs) / self.batch_size))
@@ -85,14 +77,6 @@ class DataGenerator(keras.utils.Sequence):
                 pad_arr[idx] = (pad_w//2, pad_w//2)
                 img_c = np.pad(img, pad_arr,
                                 mode='constant', constant_values=(pad_value))
-<<<<<<< HEAD
-=======
-
-        return img_c
-
-                
-                
->>>>>>> 2762a2c26d5e9500f607cdad8257ccec9d7929a7
 
         return img_c
 
