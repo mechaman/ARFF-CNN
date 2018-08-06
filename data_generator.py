@@ -19,11 +19,11 @@ class DataGenerator(keras.utils.Sequence):
         # Add an index var. to keep track of location
         self.index = 0
         self.on_epoch_end()
-
+    '''
     def next(self):
         'Get the next element in the generator'
         return self.__getitem__(self.index)
-
+    '''
     def __len__(self):
         'Denotes the number of batches per epoch'
         return int(np.floor(len(self.list_IDs) / self.batch_size))
@@ -32,11 +32,11 @@ class DataGenerator(keras.utils.Sequence):
         'Generate one batch of data'
         # Generate indexes of the batch
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-
+        #print(len(indexes))
         # Find list of IDs
         list_IDs_temp = [self.list_IDs[k] for k in indexes]
         list_ys_temp = [self.labels[k] for k in indexes]
-        
+        #print(len(list_ys_temp))        
         # Generate data
         X, y = self.__data_generation(list_IDs_temp, list_ys_temp)
         # Update index
@@ -81,8 +81,6 @@ class DataGenerator(keras.utils.Sequence):
         return img_c
 
                 
-                
-
     def __data_generation(self, list_IDs_temp, list_ys_temp):
         'Generates data containing batch_size samples'
         # Initialization
