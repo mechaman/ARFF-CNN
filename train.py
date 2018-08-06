@@ -242,16 +242,27 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
     partition['x_val'],
     partition['y_val'],
     partition['x_test'],
+=======
+>>>>>>> 2762a2c26d5e9500f607cdad8257ccec9d7929a7
     partition['y_test'])  = load_partitioned_data(train_dir, split=(80, 10, 10))
     # Define Parameters for generators
     params1 = { 'dim': (256, 256, 256),
                 'batch_size': 1,
                 'n_channels': 1,
+<<<<<<< HEAD
                 'shuffle': True}
+=======
+                'shuffle': False}
+    # Instantiate dataset generators 
+    training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params1)
+    validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params1)
+    
+>>>>>>> 2762a2c26d5e9500f607cdad8257ccec9d7929a7
     ## Instantiate Models
     print("Instantiate Unet Ensemble")
     # Create model array 
     model_arr = []
+<<<<<<< HEAD
     # Only if models already exist 
     model_fp_arr = ['./models/2dunet_back.hdf5', './models/2dunet_top.hdf5', './models/2dunet_side.hdf5']
     for i in range(3):
@@ -272,6 +283,58 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
         # Instantiate dataset generators 
         training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params1)
         validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params1)
+=======
+    for i in range(3):
+        model_arr.append(get_2dUnet(dim=(256,256), slice_type=slice_types[i]))
+    
+    ## Train Models
+    loss = []
+    dice_2d = []
+    dice_3d_train = []
+    # Create a list of loss/dice for each model
+    for i in range(0,len(model_arr)):
+        loss.append([])
+        dice_2d.append([])
+    
+    ## Training Loop 
+    for img in training_generator:
+        ## Train 2D Models & Get Metrics 
+        # Model 0 : Back Slice 
+        img_loss, img_dice = train_2dUnet(model_arr[0], img, batch_size, slice_type='back')
+        loss[0].append(img_loss)
+        dice_2d[0].append(img_dice)
+        # Model 2 : Side Slice 
+        img_loss, img_dice = train_2dUnet(model_arr[1], img, batch_size, slice_type='top')
+        loss[1].append(img_loss)
+        dice_2d[1].append(img_dice)
+        # Model 2 : Side Slice 
+        img_loss, img_dice = train_2dUnet(model_arr[2], img, batch_size, slice_type='side')
+        print(img_loss, img_dice)
+        loss[2].append(img_loss)
+        dice_2d[2].append(img_dice)
+        ## Get 3D Dice
+        # Predict 3D Mask
+        mask_vol = predict_3d_mask(model_arr, img, batch_size)
+        # Compute dice coef. 
+        print('Output mask_vol & ground truth mask: ')
+        #TODO remove [0,0,:,:] -> [:,:,:,:] - just testing out dice_coef
+        dice_3d_train.append(dice_coef(img[1][0,0,:,:], mask_vol[0,:,:,0], threshold=0.59))
+        break
+    print(dice_3d_train)
+    
+    ## Validation Loop
+    dice_3d_val = []
+    for img in validation_generator:
+        mask_vol = predict_3d_mask(model_arr, img, batch_size)
+        #TODO remove [0,0,:,:] -> [:, :, :, :] - just testing out dice_coef 
+        dice_3d_val.append(dice_coef(img[1][0,0,:,:], mask_vol[0,:,:,0], threshold=0.59))
+        break
+    print(dice_3d_val)
+    
+    ## Save the models
+    for idx, model in enumerate(model_arr):
+        save_2dUnet(model, slice_type=slice_types[idx])
+>>>>>>> 2762a2c26d5e9500f607cdad8257ccec9d7929a7
     
         ## Training Loop 
         print('Number of images to train on : ', len(training_generator))  
@@ -324,5 +387,9 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
         
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     train_2dUnet_ensemble(dim=(256,256,256), epochs=1) 
+=======
+    train_2dUnet_ensemble(dim=(256,256,256), epochs=2) 
+>>>>>>> 2762a2c26d5e9500f607cdad8257ccec9d7929a7
     
