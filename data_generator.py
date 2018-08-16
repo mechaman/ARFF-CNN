@@ -41,7 +41,7 @@ class DataGenerator(keras.utils.Sequence):
         X, y = self.__data_generation(list_IDs_temp, list_ys_temp)
         # Update index
         self.index+=1
-        return X, y
+        return X, y, list_IDs_temp
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
@@ -60,6 +60,8 @@ class DataGenerator(keras.utils.Sequence):
         '''
         Input -> img : numpy array, mask : Boolean
         ''' 
+        #@TODO Remove padding image function since it ruins image
+        # And not necessary anymore since we are resampling
         img_c = img.copy()
         # Get max dim
         dims = img.shape
