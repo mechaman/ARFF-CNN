@@ -68,7 +68,7 @@ class myUnet(object):
 
         model = Model(input = inputs, output = conv10)
         #@TODO add dice coefficient as custom metric
-        model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy'])#dice_coef])
+        model.compile(optimizer = Adam(lr = 1e-1), loss = 'binary_crossentropy')#, metrics = ['accuracy'])#dice_coef])
         
         return model
     

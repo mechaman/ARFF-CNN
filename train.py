@@ -124,7 +124,7 @@ def train_2dUnet(model, data, batch_size, slice_type):
         side_slice_batch_x = get_slice_batch(input_img,
                                             slice_type,
                                             s_idx, f_idx)
-        side_slice_batch_y= get_slice_batch(input_img,
+        side_slice_batch_y= get_slice_batch(output_mask,
                                             slice_type,
                                             s_idx, f_idx)
 
@@ -134,13 +134,15 @@ def train_2dUnet(model, data, batch_size, slice_type):
         #print(side_slice_batch_x.shape, side_slice_batch_y.shape)
         # Compute and store loss & dice
         metrics = model.train_on_batch(side_slice_batch_x, side_slice_batch_y)
-        loss.append(metrics[0])
-        dice.append(metrics[1])
+        loss.append(metrics)
+        #dice.append(metrics[1])
+        #@TODO Remove
+        break
     
     # Compute the average loss and dice scores
     avg_loss = np.mean(loss)
     avg_dice = np.mean(dice)
-    return avg_loss, avg_dice
+    return avg_loss, avg_dice, model
 
 
 def predict_3d_mask(model_arr, data, batch_size):
@@ -178,11 +180,13 @@ def save_stats(loss, dice_2d, dice_3d_train, dice_3d_val):
     dice_2d_np = np.array(dice_2d)
     np.savetxt('./logs/dice_2d.csv', dice_2d_np, delimiter=',')
     # Save dice_3d_train during training
-    dice_3d_train_np = np.array(dice_3d_train)
-    np.savetxt('./logs/dice_3d_train.csv', dice_3d_train_np, delimiter=',')
+    if dice_3d_train:
+        dice_3d_train_np = np.array(dice_3d_train)
+        np.savetxt('./logs/dice_3d_train.csv', dice_3d_train_np, delimiter=',')
     # save dice_3d_val during training
-    dice_3d_val_np = np.array(dice_3d_val)
-    np.savetxt('./logs/dice_3d_val.csv', dice_3d_val_np, delimiter=',')
+    if dice_3d_val: 
+        dice_3d_val_np = np.array(dice_3d_val)
+        np.savetxt('./logs/dice_3d_val.csv', dice_3d_val_np, delimiter=',')
 
     return True
 
@@ -228,6 +232,94 @@ def test_2dUnet_ensemble(dim=(256,256,256)):
     # Print mean dice score
     print(np.mean(dice_3d_val))
 
+def didUpdate(old_model, new_model):
+    '''
+    Function to check if model updated
+    '''
+    # Extract old weights
+    old_layer = old_model.layers[1]
+    old_weights = old_layer.get_weights()
+    # Extract new weights
+    new_layer = new_model.layers[1]
+    new_weights = new_layer.get_weights()
+    return not np.array_equal(old_weights, new_weights)
+
+def train_2dUnet_single(dim =(256,256,256), slice_type = 'side',  epochs=2):
+    '''
+    Train a single 2D Unet on a particular side
+    '''
+    sides = 1
+    dim = dim[0:2]
+    batch_size = 1
+    ## Load Data
+    print('Loading Data...')
+    train_dir = './data'
+    partition={}
+    (partition['x_train'],
+    partition['y_train'],
+    partition['x_val'],
+    partition['y_val'],
+    _,
+    _)= load_partitioned_data(train_dir, split=(0.2, 0.2, 99.6))
+    # Define Parameters for generators
+    params1 = { 'dim': (256, 256, 256),
+                'batch_size': 1,
+                'n_channels': 1,
+                'shuffle': False}
+    ## Instantiate Models
+    print("Instantiate Unet Ensemble")
+    # Create model array 
+    model_arr = []
+    # Only if models already exist 
+    model_fp_arr = ['./models/2dunet_side.hdf5']
+    for i in range(sides):
+        model_arr.append(get_2dUnet(dim=(256,256), slice_type=slice_type, model_fp=model_fp_arr[i]))
+   
+    # Iterate through Epochs 
+    for i in range(0, epochs): 
+        print('Epoch : ', i)
+        ## Train Models
+        loss = []
+        dice_2d = []
+        # Create a list of loss/dice for each model
+        for i in range(0,len(model_arr)):
+            loss.append([])
+            dice_2d.append([])
+        
+        # Instantiate dataset generators 
+        training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params1)
+        validation_generator = DataGenerator(partition['x_val'], partition['y_val'], **params1)
+    
+        ## Training Loop 
+        print('Number of images to train on : ', len(training_generator))  
+        for img in training_generator:
+            #@TODO Generator won't stop, need this statement for now. Fix
+            if training_generator.index > len(training_generator):
+                break
+            #@TODO print filename
+            print('File : ', (partition['x_train'])[(training_generator.index-1)])
+            print('Training on img number : ', training_generator.index) 
+            ## Train 2D Models & Get Metrics 
+            # Model 0 : * (Side) Slice
+            #@TODO : Remove
+            old_model = model_arr[0]
+            img_loss, img_dice, model = train_2dUnet(model_arr[0], img, batch_size, slice_type='side')
+            #model_arr[0] = model
+            new_model = model_arr[0]
+            #@TODO check if model weights differ
+            print(didUpdate(old_model, new_model))
+            print(model.metrics)
+            loss[0].append(img_loss)
+            dice_2d[0].append(img_dice)
+        print(loss)
+        # Save stats  
+        save_stats(loss, dice_2d, None, None)
+
+        ## Save the models
+        for idx, model in enumerate(model_arr):
+            save_2dUnet(model, slice_type=slice_type)
+        
+ 
 def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):        
     sides  = 3
     slice_types = ['back', 'top', 'side']
@@ -247,7 +339,7 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
     params1 = { 'dim': (256, 256, 256),
                 'batch_size': 1,
                 'n_channels': 1,
-                'shuffle': True}
+                'shuffle': False}
     ## Instantiate Models
     print("Instantiate Unet Ensemble")
     # Create model array 
@@ -285,7 +377,7 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
             img_loss, img_dice = train_2dUnet(model_arr[0], img, batch_size, slice_type='back')
             loss[0].append(img_loss)
             dice_2d[0].append(img_dice)
-            # Model 2 : Side Slice 
+            # Model 2 : Top Slice 
             img_loss, img_dice = train_2dUnet(model_arr[1], img, batch_size, slice_type='top')
             loss[1].append(img_loss)
             dice_2d[1].append(img_dice)
@@ -324,5 +416,5 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
         
 
 if __name__ == '__main__':
-    train_2dUnet_ensemble(dim=(256,256,256), epochs=1) 
+    train_2dUnet_single(dim=(256,256,256), slice_type = 'side',  epochs=400) 
     
