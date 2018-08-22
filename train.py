@@ -248,7 +248,6 @@ def train_2dUnet_single(dim =(256,256,256), slice_type = 'side',  epochs=2):
     '''
     Train a single 2D Unet on a particular side
     '''
-    sides = 1
     dim = dim[0:2]
     batch_size = 1
     ## Load Data
@@ -265,15 +264,12 @@ def train_2dUnet_single(dim =(256,256,256), slice_type = 'side',  epochs=2):
     params1 = { 'dim': (256, 256, 256),
                 'batch_size': 1,
                 'n_channels': 1,
-                'shuffle': False}
+                'shuffle': True}
     ## Instantiate Models
     print("Instantiate Unet Ensemble")
     # Create model array 
-    model_arr = []
-    # Only if models already exist 
-    model_fp_arr = ['./models/2dunet_side.hdf5']
-    for i in range(sides):
-        model_arr.append(get_2dUnet(dim=(256,256), slice_type=slice_type, model_fp=model_fp_arr[i]))
+    model_fp = ('./models/2dunet_' + slice_type + '.hdf5')
+    model = get_2dUnet(dim=(256,256), slice_type=slice_type, model_fp=model_fp)
    
     # Iterate through Epochs 
     for i in range(0, epochs): 
@@ -282,9 +278,9 @@ def train_2dUnet_single(dim =(256,256,256), slice_type = 'side',  epochs=2):
         loss = []
         dice_2d = []
         # Create a list of loss/dice for each model
-        for i in range(0,len(model_arr)):
-            loss.append([])
-            dice_2d.append([])
+        #@TODO fix output metrics for single model
+        loss.append([])
+        dice_2d.append([])
         
         # Instantiate dataset generators 
         training_generator = DataGenerator(partition['x_train'], partition['y_train'], **params1)
@@ -296,19 +292,8 @@ def train_2dUnet_single(dim =(256,256,256), slice_type = 'side',  epochs=2):
             #@TODO Generator won't stop, need this statement for now. Fix
             if training_generator.index > len(training_generator):
                 break
-            #@TODO print filename
-            print('File : ', (partition['x_train'])[(training_generator.index-1)])
-            print('Training on img number : ', training_generator.index) 
             ## Train 2D Models & Get Metrics 
-            # Model 0 : * (Side) Slice
-            #@TODO : Remove
-            old_model = model_arr[0]
-            img_loss, img_dice, model = train_2dUnet(model_arr[0], img, batch_size, slice_type='side')
-            #model_arr[0] = model
-            new_model = model_arr[0]
-            #@TODO check if model weights differ
-            print(didUpdate(old_model, new_model))
-            print(model.metrics)
+            img_loss, img_dice, model = train_2dUnet(model, img, batch_size, slice_type='side')
             loss[0].append(img_loss)
             dice_2d[0].append(img_dice)
         print(loss)
@@ -316,8 +301,7 @@ def train_2dUnet_single(dim =(256,256,256), slice_type = 'side',  epochs=2):
         save_stats(loss, dice_2d, None, None)
 
         ## Save the models
-        for idx, model in enumerate(model_arr):
-            save_2dUnet(model, slice_type=slice_type)
+        save_2dUnet(model, slice_type=slice_type)
         
  
 def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):        
@@ -388,15 +372,15 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
             dice_2d[2].append(img_dice)
             ## Get 3D Dice
             # Predict 3D Mask
-            #mask_vol = predict_3d_mask(model_arr, img, batch_size)
+            mask_vol = predict_3d_mask(model_arr, img, batch_size)
             # Compute dice coef. 
             #Ground Truth Shape:  (1, 256, 256, 256) Predicted Shape:  (256, 256, 256, 1)
-            #dice_3d_train.append(dice_coef(img[1][0,:,:,:], mask_vol[:,:,:,0], threshold=0.59))
+            slice_3d_train.append(dice_coef(img[1][0,:,:,:], mask_vol[:,:,:,0], threshold=0.59))
         print(dice_3d_train[-10:])
          
         ## Validation Loop
         dice_3d_val = []
-        '''print('Number of images to validate on : ', len(validation_generator))
+        print('Number of images to validate on : ', len(validation_generator))
         for img in validation_generator:
             #@TODO Generator won't stop, need this statement for now. Fix
             if validation_generator.index > len(validation_generator):
@@ -406,7 +390,7 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
             #Ground Truth Shape:  (1, 256, 256, 256) Predicted Shape:  (256, 256, 256, 1)
             dice_3d_val.append(dice_coef(img[1][0,:,:,:], mask_vol[:,:,:,0], threshold=0.59))
         print(dice_3d_val[-10:])
-        '''
+        
         # Save stats  
         save_stats(loss, dice_2d, dice_3d_train, dice_3d_val)
 
@@ -416,5 +400,6 @@ def train_2dUnet_ensemble(dim = (256,256,256), epochs=2):
         
 
 if __name__ == '__main__':
-    train_2dUnet_single(dim=(256,256,256), slice_type = 'side',  epochs=400) 
-    
+    train_2dUnet_single(dim=(256,256,256), slice_type='side',  epochs=1) 
+    train_2dUnet_single(dim=(256,256,256), slice_type='bottom', epochs=1)
+    train_2dUnet_single(dim=(256,256,256), slice_tpe='top', epochs=1)
