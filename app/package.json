@@ -1,0 +1,13 @@
+{
+  "name": "tf-js",
+  "version": "1.0.0",
+  "main": "script.js",
+  "license": "MIT",
+  "dependencies": {
+    "@tensorflow/tfjs": "^0.13.5",
+    "@tensorflow/tfjs-node": "^0.1.21",
+    "filereader": "^0.10.3",
+    "nifti-reader-js": "^0.5.4",
+    "node-fetch": "^2.3.0"
+  }
+}
